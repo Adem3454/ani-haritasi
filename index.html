@@ -3,98 +3,126 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Anılar">
-<meta name="theme-color" content="#ffffff">
 <title>Anı Haritası</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
 <style>
-:root{--bg:#fff;--fg:#1c1c1e;--mut:#8e8e93;--card:#f2f2f7;--ac:#ff3b6b}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f7;--card:#2c2c2e}}
-*{box-sizing:border-box}html,body{height:100%;margin:0;font:16px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bg)}
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#86868b;--card:#f2f2f4;--ac:#ff4d6d;--gl:rgba(255,255,255,.8)}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f5f5f7;--card:#2c2c2e;--gl:rgba(28,28,30,.8)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;font:16px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bg)}
 #map{position:absolute;inset:0}
-#top{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px}
-#bar{display:flex;gap:8px}
-#q{flex:1;padding:13px 16px;border:0;border-radius:14px;background:var(--bg);color:var(--fg);font-size:16px;box-shadow:0 2px 12px #0004}
-.fab{border:0;border-radius:14px;background:var(--bg);color:var(--fg);width:48px;font-size:20px;box-shadow:0 2px 12px #0004}
-#res{margin-top:6px;background:var(--bg);border-radius:14px;box-shadow:0 2px 12px #0004;overflow:hidden}
-#res div{padding:12px 16px;border-bottom:1px solid var(--card);font-size:14px}
-#sheet{position:absolute;z-index:1001;left:0;right:0;bottom:0;max-height:78%;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -4px 20px #0005;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);transform:translateY(110%);transition:.25s}
+.gl{background:var(--gl);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 4px 20px #0003}
+#top{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top) + 10px);left:12px;right:12px}
+#bar{display:flex;align-items:center;gap:10px;padding:0 16px;height:50px;border-radius:25px}
+#q{flex:1;border:0;background:none;color:var(--fg);font-size:17px;outline:none;min-width:0}
+#res{margin-top:8px;border-radius:20px;overflow:hidden}
+.it{display:flex;align-items:center;gap:12px;padding:12px 16px}.it+.it{border-top:1px solid #8883}
+.it .ic{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;flex:none}
+.it div{flex:1;min-width:0}.it b,.it small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it small,.mut{color:var(--mut);font-size:13px}.it em{font:12px system-ui;color:var(--mut);font-style:normal}
+#fabs{position:absolute;z-index:1000;right:12px;bottom:calc(env(safe-area-inset-bottom) + 28px);display:flex;flex-direction:column;gap:12px}
+.fab{width:52px;height:52px;border-radius:50%;border:0;font-size:22px;color:var(--fg)}
+.fab.p{background:var(--ac);color:#fff;font-size:30px;box-shadow:0 4px 16px #ff4d6d88}
+body.so #fabs{display:none}
+#sheet{position:absolute;z-index:1001;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);max-height:80%;overflow:auto;border-radius:28px;padding:10px 18px 18px;transform:translateY(120%);transition:.3s cubic-bezier(.2,.8,.2,1)}
 #sheet.on{transform:none}
-#sheet input,#sheet textarea{width:100%;padding:12px;margin:5px 0;border:0;border-radius:12px;background:var(--card);color:var(--fg);font:inherit}
-.btn{border:0;border-radius:12px;padding:13px;font:600 16px inherit;background:var(--ac);color:#fff;width:100%;margin-top:6px}
+#sheet>i{display:block;width:38px;height:5px;border-radius:3px;background:var(--mut);opacity:.4;margin:0 auto 12px}
+h2{margin:0 0 2px;font-size:22px}
+input,textarea{width:100%;padding:13px 14px;margin:5px 0;border:0;border-radius:14px;background:var(--card);color:var(--fg);font:inherit;outline:none}
+.btn{border:0;border-radius:14px;padding:14px;font:600 16px system-ui;background:var(--ac);color:#fff;width:100%;margin-top:8px}
 .btn.g{background:var(--card);color:var(--fg)}
 .row{display:flex;gap:8px}
-.ph{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory}
-.ph img{height:240px;border-radius:14px;scroll-snap-align:start}
-.chip{display:inline-block;background:var(--card);border-radius:20px;padding:4px 10px;margin:2px;font-size:14px}
-.pin{width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:#ffd1dc center/cover;box-shadow:0 2px 8px #0006;display:grid;place-items:center;font-size:22px}
-.pin.big{width:54px;height:54px;position:relative}
-.pin.big b{position:absolute;right:-6px;top:-6px;background:var(--ac);color:#fff;font-size:12px;border-radius:10px;padding:1px 6px}
-.mut{color:var(--mut);font-size:13px}
+.pv{display:flex;gap:8px;overflow-x:auto;padding:6px 0}
+.th{flex:none;width:78px;height:78px;border-radius:16px;background:var(--card) center/cover;position:relative;display:grid;place-items:center;font-size:28px;color:var(--mut)}
+.th b{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:#000a;color:#fff;font-size:14px;display:grid;place-items:center}
+.ph{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -4px}
+.ph img{height:260px;max-width:90%;border-radius:20px;scroll-snap-align:center;object-fit:cover}
+.chip{display:inline-block;background:var(--card);border-radius:20px;padding:6px 12px;margin:3px 3px 3px 0;font-size:14px}
+.pin{width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:#ffd6de center/cover;box-shadow:0 3px 10px #0006;display:grid;place-items:center;font-size:22px;position:relative}
+.pin i{position:absolute;right:-6px;bottom:-4px;font-size:15px;font-style:normal}
+.pin.big{width:56px;height:56px}.pin.big b{position:absolute;right:-6px;top:-6px;background:var(--ac);color:#fff;font:700 12px system-ui;border-radius:10px;padding:2px 7px}
+.drop{width:28px;height:28px;background:var(--ac);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px #0006}
+.me{background:#0a84ff;border:3px solid #fff}
+.leaflet-control-attribution{font-size:9px;opacity:.7}
 </style></head><body>
 <div id="map"></div>
-<div id="top"><div id="bar"><input id="q" placeholder="Yer ara…" enterkeyhint="search"><button class="fab" id="loc">📍</button><button class="fab" id="menu">⋯</button></div><div id="res"></div></div>
-<div id="sheet"></div>
-<input type="file" id="imp" accept=".json" hidden>
+<div id="top"><div id="bar" class="gl">🔍<input id="q" placeholder="Mekan ara…" autocomplete="off"></div><div id="res" class="gl" hidden></div></div>
+<div id="fabs"><button class="fab gl" id="menu">⋯</button><button class="fab gl" id="loc">➤</button><button class="fab p" id="add">+</button></div>
+<div id="sheet" class="gl"></div><input type="file" id="imp" accept=".json" hidden>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
-const $=s=>document.querySelector(s);
-const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// --- Depolama (IndexedDB, cihazda)
+const $=s=>document.querySelector(s),esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dbp=new Promise(r=>{const q=indexedDB.open('anilar',1);q.onupgradeneeded=()=>q.result.createObjectStore('m',{keyPath:'id'});q.onsuccess=()=>r(q.result)});
 const tx=async(mode,fn)=>{const db=await dbp;return new Promise((res,rej)=>{const t=db.transaction('m',mode);const rq=fn(t.objectStore('m'));t.oncomplete=()=>res(rq.result);t.onerror=rej})};
 const all=()=>tx('readonly',s=>s.getAll()),put=m=>tx('readwrite',s=>s.put(m)),del=id=>tx('readwrite',s=>s.delete(id));
-// --- Harita
-const map=L.map('map',{zoomControl:false}).setView([41.01,28.97],12);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-const cl=L.markerClusterGroup({maxClusterRadius:60,iconCreateFunction:c=>{const ms=c.getAllChildMarkers();const th=ms.find(m=>m.options.th);
- return L.divIcon({className:'',iconSize:[54,54],html:`<div class="pin big" style="${th?`background-image:url(${th.options.th})`:''}"><b>${ms.length}</b></div>`})}});
+const map=L.map('map',{zoomControl:false}).setView([41.0082,28.9784],13);
+map.attributionControl.setPrefix(false);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+const cl=L.markerClusterGroup({maxClusterRadius:60,iconCreateFunction:c=>{const ms=c.getAllChildMarkers(),th=ms.find(m=>m.options.th);
+ return L.divIcon({className:'',iconSize:[56,56],html:`<div class="pin big" style="${th?`background-image:url(${th.options.th})`:''}"><b>${ms.length}</b></div>`})}});
 map.addLayer(cl);
-let temp=null;
-async function render(){cl.clearLayers();for(const m of await all()){const th=m.photos[0]||'';
- const mk=L.marker([m.lat,m.lng],{th,icon:L.divIcon({className:'',iconSize:[46,46],html:`<div class="pin" style="${th?`background-image:url(${th})`:''}">${th?'':(m.heart?'❤️':'📍')}</div>`})});
- mk.on('click',()=>detail(m));cl.addLayer(mk)}}
-// --- Sheet
-const sheet=$('#sheet');const open=h=>{sheet.innerHTML=h;sheet.classList.add('on')};
-const close=()=>{sheet.classList.remove('on');if(temp){map.removeLayer(temp);temp=null}};
-map.on('click',e=>{$('#res').innerHTML='';form({lat:e.latlng.lat,lng:e.latlng.lng,name:''})});
-function form(p){
- if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng]).addTo(map);
- open(`<h3 style="margin:0 0 6px">Yeni anı</h3><input id="t" placeholder="Başlık / yer adı" value="${esc(p.name)}">
- <textarea id="c" rows="3" placeholder="Ne yaşandı? Bir yorum bırak…"></textarea>
- <input id="g" placeholder="Kimlerle? (virgülle: Ayşe, Mehmet)">
- <input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
- <input id="f" type="file" accept="image/*" multiple>
- <div class="row"><button class="btn g" id="x">Vazgeç</button><button class="btn" id="s">Kaydet</button></div>`);
- $('#x').onclick=close;
- $('#s').onclick=async()=>{$('#s').textContent='…';const photos=[];for(const f of $('#f').files)photos.push(await shrink(f));
-  await put({id:Date.now()+'',lat:p.lat,lng:p.lng,title:$('#t').value||'Anı',text:$('#c').value,
-   tags:$('#g').value.split(',').map(s=>s.trim()).filter(Boolean),date:$('#d').value,photos,heart:false});
-  close();render()}}
+let mem=[],temp,cur,busy=false,me;
+async function render(){mem=await all();cl.clearLayers();for(const m of mem){const th=m.photos[0]||'';
+ const mk=L.marker([m.lat,m.lng],{th,icon:L.divIcon({className:'',iconSize:[48,48],html:`<div class="pin" style="${th?`background-image:url(${th})`:''}">${th?'':'📍'}${m.heart?'<i>❤️</i>':''}</div>`})});
+ mk.on('click',e=>{L.DomEvent.stopPropagation(e);detail(m)});cl.addLayer(mk)}}
+// konum
+const locate=z=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];map.flyTo(ll,z||16);
+ me?me.setLatLng(ll):me=L.marker(ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],html:'<div class="pin me" style="width:18px;height:18px"></div>'})}).addTo(map)});
+$('#loc').onclick=()=>locate();locate(15);
+// sheet
+const sheet=$('#sheet');
+const open=(h,b)=>{sheet.innerHTML='<i></i>'+h;sheet.classList.add('on');document.body.classList.add('so');busy=!!b;$('#res').hidden=true};
+const close=()=>{sheet.classList.remove('on');document.body.classList.remove('so');busy=false;if(temp){map.removeLayer(temp);temp=null}};
+map.on('click',e=>{if(busy)return;$('#q').blur();showPlace({lat:e.latlng.lat,lng:e.latlng.lng})});
+$('#add').onclick=()=>{const c=map.getCenter();showPlace({lat:c.lat,lng:c.lng})};
+async function showPlace(p){
+ if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,28],html:'<div class="drop"></div>'})}).addTo(map);cur=p;
+ const draw=()=>{open(`<h2>${esc(p.name||'Konum seçildi')}</h2><div class="mut">${esc(p.addr||'Adres aranıyor…')}</div>
+  <button class="btn" id="a">＋ Anı ekle</button><button class="btn g" id="x">Kapat</button>`);$('#a').onclick=()=>form();$('#x').onclick=close};
+ draw();
+ if(!p.name){try{const j=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&accept-language=tr&lat=${p.lat}&lon=${p.lng}`)).json();
+  if(cur!==p||busy)return;const a=j.address||{};p.name=j.name||a.road||a.suburb||'Seçilen konum';p.addr=(j.display_name||'').split(',').slice(1,4).join(',').trim()}catch{if(cur!==p||busy)return;p.name='Seçilen konum';p.addr=''}draw()}}
+function form(){
+ let ph=[],tg=[],hr=false;const fr=[...new Set(mem.flatMap(m=>m.tags))];
+ open(`<h2>Yeni anı</h2><div class="mut">📍 ${esc(cur.addr||cur.name)}</div>
+ <input id="t" value="${esc(cur.name)}" placeholder="Başlık"><div id="pv" class="pv"></div>
+ <textarea id="c" rows="3" placeholder="Ne yaşandı? Bir not bırak…"></textarea>
+ <div id="ch"></div><input id="g" list="fl" placeholder="👥 Kimlerle? İsim yaz, Enter'a bas"><datalist id="fl">${fr.map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
+ <div class="row"><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}"><button class="btn g" id="h" style="width:64px;margin:5px 0">🤍</button></div>
+ <div class="row"><button class="btn g" id="x">Vazgeç</button><button class="btn" id="s">Kaydet</button></div>`,1);
+ const rp=()=>{$('#pv').innerHTML=ph.map((s,i)=>`<div class="th" style="background-image:url(${s})" data-i="${i}"><b>×</b></div>`).join('')+'<label class="th">＋<input id="f" type="file" accept="image/*" multiple hidden></label>';
+  $('#f').onchange=async e=>{for(const f of e.target.files)ph.push(await shrink(f));rp()};
+  $('#pv').querySelectorAll('[data-i]').forEach(d=>d.onclick=()=>{ph.splice(d.dataset.i,1);rp()})};rp();
+ const rc=()=>{$('#ch').innerHTML=tg.map((t,i)=>`<span class="chip" data-i="${i}">👥 ${esc(t)} ×</span>`).join('');$('#ch').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{tg.splice(c.dataset.i,1);rc()})};
+ const addT=()=>{const v=$('#g').value.replace(',','').trim();if(v&&!tg.includes(v))tg.push(v);$('#g').value='';rc()};
+ $('#g').onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addT()}};$('#g').onblur=addT;
+ $('#h').onclick=()=>{hr=!hr;$('#h').textContent=hr?'❤️':'🤍'};$('#x').onclick=close;
+ $('#s').onclick=async()=>{addT();await put({id:Date.now()+'',lat:cur.lat,lng:cur.lng,title:$('#t').value||'Anı',place:cur.name,text:$('#c').value,tags:tg,date:$('#d').value,photos:ph,heart:hr});close();render()}}
 function detail(m){
  open(`${m.photos.length?`<div class="ph">${m.photos.map(s=>`<img src="${s}">`).join('')}</div>`:''}
- <h3 style="margin:12px 0 2px">${esc(m.title)}</h3><div class="mut">${esc(m.date)}</div>
+ <h2 style="margin-top:12px">${esc(m.title)} ${m.heart?'❤️':''}</h2><div class="mut">📍 ${esc(m.place||'')} · ${esc(m.date)}</div>
  <p>${esc(m.text)}</p><div>${m.tags.map(t=>`<span class="chip">👥 ${esc(t)}</span>`).join('')}</div>
- <div class="row" style="margin-top:10px"><button class="btn g" id="h">${m.heart?'❤️':'🤍'}</button><button class="btn g" id="r">🗑️ Sil</button><button class="btn g" id="x">Kapat</button></div>`);
- $('#x').onclick=close;
- $('#h').onclick=async()=>{m.heart=!m.heart;await put(m);detail(m);render()};
+ <div class="row"><button class="btn g" id="h">${m.heart?'❤️':'🤍'}</button><button class="btn g" id="r">🗑️</button><button class="btn" id="x">Kapat</button></div>`);
+ $('#x').onclick=close;$('#h').onclick=async()=>{m.heart=!m.heart;await put(m);detail(m);render()};
  $('#r').onclick=async()=>{if(confirm('Bu anı silinsin mi?')){await del(m.id);close();render()}}}
 const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};i.src=URL.createObjectURL(f)});
-// --- Arama (yakın sonuçlara öncelik)
-let tm;$('#q').oninput=()=>{clearTimeout(tm);tm=setTimeout(search,700)};
-async function search(){const q=$('#q').value.trim(),R=$('#res');if(q.length<3){R.innerHTML='';return}
- const b=map.getBounds(),vb=[b.getWest(),b.getNorth(),b.getEast(),b.getSouth()].join(',');
- try{const j=await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&viewbox=${vb}&q=${encodeURIComponent(q)}`)).json();
- R.innerHTML=j.map((p,i)=>`<div data-i="${i}">${esc(p.display_name)}</div>`).join('')||'<div>Sonuç yok</div>';
- R.querySelectorAll('div[data-i]').forEach(d=>d.onclick=()=>{const p=j[d.dataset.i];R.innerHTML='';$('#q').blur();
-  map.flyTo([+p.lat,+p.lon],17);form({lat:+p.lat,lng:+p.lon,name:p.name||p.display_name.split(',')[0]})})}catch(e){R.innerHTML='<div>Arama başarısız</div>'}}
-$('#loc').onclick=()=>navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],16));
-// --- Yedek
-$('#menu').onclick=()=>open(`<h3 style="margin:0 0 6px">Yedek</h3><p class="mut">Anıların bu cihazda saklanır. Düzenli yedek al.</p>
- <button class="btn" id="e">Yedeği indir</button><button class="btn g" id="i">Yedekten yükle</button><button class="btn g" id="x">Kapat</button>`)||
- ($('#x').onclick=close,$('#i').onclick=()=>$('#imp').click(),$('#e').onclick=async()=>{const a=document.createElement('a');
- a.href=URL.createObjectURL(new Blob([JSON.stringify(await all())],{type:'application/json'}));a.download='anilar.json';a.click()});
+// arama: yazarken, haritanın bulunduğu yere yakın sonuçlar
+let tm,ac;$('#q').oninput=()=>{clearTimeout(tm);tm=setTimeout(search,300)};
+const dist=d=>d<1000?Math.round(d)+' m':(d/1000).toFixed(d<10000?1:0)+' km';
+async function search(){const q=$('#q').value.trim(),R=$('#res');if(q.length<2){R.hidden=true;return}
+ const c=map.getCenter();ac&&ac.abort();ac=new AbortController();
+ const get=async b=>(await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=20&lat=${c.lat}&lon=${c.lng}${b?`&bbox=${c.lng-.5},${c.lat-.35},${c.lng+.5},${c.lat+.35}`:''}`,{signal:ac.signal})).json()).features||[];
+ try{let f=await get(1);if(!f.length)f=await get(0);
+  const L2=f.map(x=>{const p=x.properties,[lo,la]=x.geometry.coordinates;return{lat:la,lng:lo,name:p.name||p.street||'',addr:[p.street,p.district||p.city,p.state].filter(Boolean).join(', '),d:map.distance(c,[la,lo])}}).filter(x=>x.name).sort((a,b)=>a.d-b.d).slice(0,6);
+  R.innerHTML=L2.map((x,i)=>`<div class="it" data-i="${i}"><span class="ic">📍</span><div><b>${esc(x.name)}</b><small>${esc(x.addr)}</small></div><em>${dist(x.d)}</em></div>`).join('')||'<div class="it"><small>Sonuç yok</small></div>';R.hidden=false;
+  R.querySelectorAll('.it[data-i]').forEach(d=>d.onclick=()=>{const x=L2[d.dataset.i];R.hidden=true;$('#q').value='';$('#q').blur();map.flyTo([x.lat,x.lng],17);showPlace({lat:x.lat,lng:x.lng,name:x.name,addr:x.addr})})}catch(e){}}
+// yedek
+$('#menu').onclick=()=>{open(`<h2>Yedek</h2><div class="mut">Anıların bu cihazda saklanır. Düzenli yedek al.</div>
+ <button class="btn" id="e">Yedeği indir</button><button class="btn g" id="i">Yedekten yükle</button><button class="btn g" id="x">Kapat</button>`);
+ $('#x').onclick=close;$('#i').onclick=()=>$('#imp').click();
+ $('#e').onclick=async()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(await all())],{type:'application/json'}));a.download='anilar.json';a.click()}};
 $('#imp').onchange=async e=>{for(const m of JSON.parse(await e.target.files[0].text()))await put(m);close();render()};
 render();
 </script></body></html>
