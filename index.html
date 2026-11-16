@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Anılar">
+<meta name="theme-color" content="#ffffff">
+<title>Anı Haritası</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<style>
+:root{--bg:#fff;--fg:#1c1c1e;--mut:#8e8e93;--card:#f2f2f7;--ac:#ff3b6b}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f7;--card:#2c2c2e}}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font:16px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bg)}
+#map{position:absolute;inset:0}
+#top{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px}
+#bar{display:flex;gap:8px}
+#q{flex:1;padding:13px 16px;border:0;border-radius:14px;background:var(--bg);color:var(--fg);font-size:16px;box-shadow:0 2px 12px #0004}
+.fab{border:0;border-radius:14px;background:var(--bg);color:var(--fg);width:48px;font-size:20px;box-shadow:0 2px 12px #0004}
+#res{margin-top:6px;background:var(--bg);border-radius:14px;box-shadow:0 2px 12px #0004;overflow:hidden}
+#res div{padding:12px 16px;border-bottom:1px solid var(--card);font-size:14px}
+#sheet{position:absolute;z-index:1001;left:0;right:0;bottom:0;max-height:78%;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;box-shadow:0 -4px 20px #0005;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);transform:translateY(110%);transition:.25s}
+#sheet.on{transform:none}
+#sheet input,#sheet textarea{width:100%;padding:12px;margin:5px 0;border:0;border-radius:12px;background:var(--card);color:var(--fg);font:inherit}
+.btn{border:0;border-radius:12px;padding:13px;font:600 16px inherit;background:var(--ac);color:#fff;width:100%;margin-top:6px}
+.btn.g{background:var(--card);color:var(--fg)}
+.row{display:flex;gap:8px}
+.ph{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory}
+.ph img{height:240px;border-radius:14px;scroll-snap-align:start}
+.chip{display:inline-block;background:var(--card);border-radius:20px;padding:4px 10px;margin:2px;font-size:14px}
+.pin{width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:#ffd1dc center/cover;box-shadow:0 2px 8px #0006;display:grid;place-items:center;font-size:22px}
+.pin.big{width:54px;height:54px;position:relative}
+.pin.big b{position:absolute;right:-6px;top:-6px;background:var(--ac);color:#fff;font-size:12px;border-radius:10px;padding:1px 6px}
+.mut{color:var(--mut);font-size:13px}
+</style></head><body>
+<div id="map"></div>
+<div id="top"><div id="bar"><input id="q" placeholder="Yer ara…" enterkeyhint="search"><button class="fab" id="loc">📍</button><button class="fab" id="menu">⋯</button></div><div id="res"></div></div>
+<div id="sheet"></div>
+<input type="file" id="imp" accept=".json" hidden>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// --- Depolama (IndexedDB, cihazda)
+const dbp=new Promise(r=>{const q=indexedDB.open('anilar',1);q.onupgradeneeded=()=>q.result.createObjectStore('m',{keyPath:'id'});q.onsuccess=()=>r(q.result)});
+const tx=async(mode,fn)=>{const db=await dbp;return new Promise((res,rej)=>{const t=db.transaction('m',mode);const rq=fn(t.objectStore('m'));t.oncomplete=()=>res(rq.result);t.onerror=rej})};
+const all=()=>tx('readonly',s=>s.getAll()),put=m=>tx('readwrite',s=>s.put(m)),del=id=>tx('readwrite',s=>s.delete(id));
+// --- Harita
+const map=L.map('map',{zoomControl:false}).setView([41.01,28.97],12);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+const cl=L.markerClusterGroup({maxClusterRadius:60,iconCreateFunction:c=>{const ms=c.getAllChildMarkers();const th=ms.find(m=>m.options.th);
+ return L.divIcon({className:'',iconSize:[54,54],html:`<div class="pin big" style="${th?`background-image:url(${th.options.th})`:''}"><b>${ms.length}</b></div>`})}});
+map.addLayer(cl);
+let temp=null;
+async function render(){cl.clearLayers();for(const m of await all()){const th=m.photos[0]||'';
+ const mk=L.marker([m.lat,m.lng],{th,icon:L.divIcon({className:'',iconSize:[46,46],html:`<div class="pin" style="${th?`background-image:url(${th})`:''}">${th?'':(m.heart?'❤️':'📍')}</div>`})});
+ mk.on('click',()=>detail(m));cl.addLayer(mk)}}
+// --- Sheet
+const sheet=$('#sheet');const open=h=>{sheet.innerHTML=h;sheet.classList.add('on')};
+const close=()=>{sheet.classList.remove('on');if(temp){map.removeLayer(temp);temp=null}};
+map.on('click',e=>{$('#res').innerHTML='';form({lat:e.latlng.lat,lng:e.latlng.lng,name:''})});
+function form(p){
+ if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng]).addTo(map);
+ open(`<h3 style="margin:0 0 6px">Yeni anı</h3><input id="t" placeholder="Başlık / yer adı" value="${esc(p.name)}">
+ <textarea id="c" rows="3" placeholder="Ne yaşandı? Bir yorum bırak…"></textarea>
+ <input id="g" placeholder="Kimlerle? (virgülle: Ayşe, Mehmet)">
+ <input id="d" type="date" value="${new Date().toISOString().slice(0,10)}">
+ <input id="f" type="file" accept="image/*" multiple>
+ <div class="row"><button class="btn g" id="x">Vazgeç</button><button class="btn" id="s">Kaydet</button></div>`);
+ $('#x').onclick=close;
+ $('#s').onclick=async()=>{$('#s').textContent='…';const photos=[];for(const f of $('#f').files)photos.push(await shrink(f));
+  await put({id:Date.now()+'',lat:p.lat,lng:p.lng,title:$('#t').value||'Anı',text:$('#c').value,
+   tags:$('#g').value.split(',').map(s=>s.trim()).filter(Boolean),date:$('#d').value,photos,heart:false});
+  close();render()}}
+function detail(m){
+ open(`${m.photos.length?`<div class="ph">${m.photos.map(s=>`<img src="${s}">`).join('')}</div>`:''}
+ <h3 style="margin:12px 0 2px">${esc(m.title)}</h3><div class="mut">${esc(m.date)}</div>
+ <p>${esc(m.text)}</p><div>${m.tags.map(t=>`<span class="chip">👥 ${esc(t)}</span>`).join('')}</div>
+ <div class="row" style="margin-top:10px"><button class="btn g" id="h">${m.heart?'❤️':'🤍'}</button><button class="btn g" id="r">🗑️ Sil</button><button class="btn g" id="x">Kapat</button></div>`);
+ $('#x').onclick=close;
+ $('#h').onclick=async()=>{m.heart=!m.heart;await put(m);detail(m);render()};
+ $('#r').onclick=async()=>{if(confirm('Bu anı silinsin mi?')){await del(m.id);close();render()}}}
+const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};i.src=URL.createObjectURL(f)});
+// --- Arama (yakın sonuçlara öncelik)
+let tm;$('#q').oninput=()=>{clearTimeout(tm);tm=setTimeout(search,700)};
+async function search(){const q=$('#q').value.trim(),R=$('#res');if(q.length<3){R.innerHTML='';return}
+ const b=map.getBounds(),vb=[b.getWest(),b.getNorth(),b.getEast(),b.getSouth()].join(',');
+ try{const j=await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&viewbox=${vb}&q=${encodeURIComponent(q)}`)).json();
+ R.innerHTML=j.map((p,i)=>`<div data-i="${i}">${esc(p.display_name)}</div>`).join('')||'<div>Sonuç yok</div>';
+ R.querySelectorAll('div[data-i]').forEach(d=>d.onclick=()=>{const p=j[d.dataset.i];R.innerHTML='';$('#q').blur();
+  map.flyTo([+p.lat,+p.lon],17);form({lat:+p.lat,lng:+p.lon,name:p.name||p.display_name.split(',')[0]})})}catch(e){R.innerHTML='<div>Arama başarısız</div>'}}
+$('#loc').onclick=()=>navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],16));
+// --- Yedek
+$('#menu').onclick=()=>open(`<h3 style="margin:0 0 6px">Yedek</h3><p class="mut">Anıların bu cihazda saklanır. Düzenli yedek al.</p>
+ <button class="btn" id="e">Yedeği indir</button><button class="btn g" id="i">Yedekten yükle</button><button class="btn g" id="x">Kapat</button>`)||
+ ($('#x').onclick=close,$('#i').onclick=()=>$('#imp').click(),$('#e').onclick=async()=>{const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(await all())],{type:'application/json'}));a.download='anilar.json';a.click()});
+$('#imp').onchange=async e=>{for(const m of JSON.parse(await e.target.files[0].text()))await put(m);close();render()};
+render();
+</script></body></html>
