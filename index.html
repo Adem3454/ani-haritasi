@@ -44,12 +44,18 @@ input,textarea{width:100%;padding:13px 14px;margin:5px 0;border:0;border-radius:
 .pin.big{width:56px;height:56px}.pin.big b{position:absolute;right:-6px;top:-6px;background:var(--ac);color:#fff;font:700 12px system-ui;border-radius:10px;padding:2px 7px}
 .drop{width:28px;height:28px;background:var(--ac);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px #0006}
 .me{background:#0a84ff;border:3px solid #fff}
+#pill{position:absolute;z-index:1000;left:12px;right:76px;bottom:calc(env(safe-area-inset-bottom) + 28px);display:none;align-items:center;gap:8px;padding:8px 8px 8px 18px;border-radius:30px}
+#pill.on{display:flex}#pill div{flex:1;min-width:0}#pill b,#pill small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pill small{color:var(--mut);font-size:12px}
+#pill .btn{width:auto;margin:0;padding:11px 14px;white-space:nowrap}
+#pill .x{border:0;background:var(--card);color:var(--fg);width:36px;height:36px;border-radius:50%;font-size:18px;flex:none}
+#toast{position:absolute;z-index:1002;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 76px);padding:12px 16px;border-radius:16px;font-size:14px;display:none}
 .leaflet-control-attribution{font-size:9px;opacity:.7}
 </style></head><body>
 <div id="map"></div>
 <div id="top"><div id="bar" class="gl">🔍<input id="q" placeholder="Mekan ara…" autocomplete="off"></div><div id="res" class="gl" hidden></div></div>
 <div id="fabs"><button class="fab gl" id="menu">⋯</button><button class="fab gl" id="loc">➤</button><button class="fab p" id="add">+</button></div>
-<div id="sheet" class="gl"></div><input type="file" id="imp" accept=".json" hidden>
+<div id="pill" class="gl"></div><div id="toast" class="gl"></div><div id="sheet" class="gl"></div><input type="file" id="imp" accept=".json" hidden>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 <script>
@@ -59,7 +65,8 @@ const tx=async(mode,fn)=>{const db=await dbp;return new Promise((res,rej)=>{cons
 const all=()=>tx('readonly',s=>s.getAll()),put=m=>tx('readwrite',s=>s.put(m)),del=id=>tx('readwrite',s=>s.delete(id));
 const map=L.map('map',{zoomControl:false}).setView([41.0082,28.9784],13);
 map.attributionControl.setPrefix(false);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+const CARTO_KEY=''; // istersen carto.com/basemaps/apikey adresinden ücretsiz anahtar al, buraya yapıştır
+L.tileLayer(CARTO_KEY?`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap'+(CARTO_KEY?' © CARTO':'')}).addTo(map);
 const cl=L.markerClusterGroup({maxClusterRadius:60,iconCreateFunction:c=>{const ms=c.getAllChildMarkers(),th=ms.find(m=>m.options.th);
  return L.divIcon({className:'',iconSize:[56,56],html:`<div class="pin big" style="${th?`background-image:url(${th.options.th})`:''}"><b>${ms.length}</b></div>`})}});
 map.addLayer(cl);
@@ -68,22 +75,27 @@ async function render(){mem=await all();cl.clearLayers();for(const m of mem){con
  const mk=L.marker([m.lat,m.lng],{th,icon:L.divIcon({className:'',iconSize:[48,48],html:`<div class="pin" style="${th?`background-image:url(${th})`:''}">${th?'':'📍'}${m.heart?'<i>❤️</i>':''}</div>`})});
  mk.on('click',e=>{L.DomEvent.stopPropagation(e);detail(m)});cl.addLayer(mk)}}
 // konum
-const locate=z=>navigator.geolocation&&navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];map.flyTo(ll,z||16);
- me?me.setLatLng(ll):me=L.marker(ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],html:'<div class="pin me" style="width:18px;height:18px"></div>'})}).addTo(map)});
-$('#loc').onclick=()=>locate();locate(15);
+const toast=t=>{const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',7000)};
+const setMe=ll=>{me?me.setLatLng(ll):me=L.marker(ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],html:'<div class="pin me" style="width:18px;height:18px"></div>'})}).addTo(map)};
+const locate=first=>{if(!navigator.geolocation)return toast('Bu cihaz konumu desteklemiyor');
+ navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];try{localStorage.setItem('last',JSON.stringify(ll))}catch{}setMe(ll);first?map.setView(ll,16):map.flyTo(ll,16)},
+ e=>toast(e.code==1?'Konum izni kapalı. iPhone: Ayarlar → Gizlilik ve Güvenlik → Konum Servisleri → Safari Web Siteleri → "Uygulamayı Kullanırken" seç.':'Konum alınamadı, 📍 butonuyla tekrar dene.'),{enableHighAccuracy:true,timeout:12000,maximumAge:30000})};
+try{const l=JSON.parse(localStorage.getItem('last'));if(l)map.setView(l,16)}catch{}
+$('#loc').onclick=()=>locate();locate(true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)locate(true)});
 // sheet
-const sheet=$('#sheet');
-const open=(h,b)=>{sheet.innerHTML='<i></i>'+h;sheet.classList.add('on');document.body.classList.add('so');busy=!!b;$('#res').hidden=true};
-const close=()=>{sheet.classList.remove('on');document.body.classList.remove('so');busy=false;if(temp){map.removeLayer(temp);temp=null}};
+const sheet=$('#sheet'),pill=$('#pill');
+const hideSheet=()=>{sheet.classList.remove('on');document.body.classList.remove('so');busy=false};
+const open=(h,b)=>{pill.classList.remove('on');sheet.innerHTML='<i></i>'+h;sheet.classList.add('on');document.body.classList.add('so');busy=!!b;$('#res').hidden=true};
+const close=()=>{hideSheet();pill.classList.remove('on');if(temp){map.removeLayer(temp);temp=null}};
 map.on('click',e=>{if(busy)return;$('#q').blur();showPlace({lat:e.latlng.lat,lng:e.latlng.lng})});
 $('#add').onclick=()=>{const c=map.getCenter();showPlace({lat:c.lat,lng:c.lng})};
+const drawPill=()=>{pill.innerHTML=`<div><b>${esc(cur.name||'Konum seçildi')}</b><small>${esc(cur.addr||'Adres aranıyor…')}</small></div><button class="btn" id="a">＋ Anı</button><button class="x" id="px">×</button>`;pill.classList.add('on');$('#a').onclick=()=>form();$('#px').onclick=close};
 async function showPlace(p){
- if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,28],html:'<div class="drop"></div>'})}).addTo(map);cur=p;
- const draw=()=>{open(`<h2>${esc(p.name||'Konum seçildi')}</h2><div class="mut">${esc(p.addr||'Adres aranıyor…')}</div>
-  <button class="btn" id="a">＋ Anı ekle</button><button class="btn g" id="x">Kapat</button>`);$('#a').onclick=()=>form();$('#x').onclick=close};
- draw();
+ hideSheet();if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,28],html:'<div class="drop"></div>'})}).addTo(map);cur=p;drawPill();
+ const stale=()=>cur!==p||busy||sheet.classList.contains('on');
  if(!p.name){try{const j=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&accept-language=tr&lat=${p.lat}&lon=${p.lng}`)).json();
-  if(cur!==p||busy)return;const a=j.address||{};p.name=j.name||a.road||a.suburb||'Seçilen konum';p.addr=(j.display_name||'').split(',').slice(1,4).join(',').trim()}catch{if(cur!==p||busy)return;p.name='Seçilen konum';p.addr=''}draw()}}
+  if(stale())return;const a=j.address||{};p.name=j.name||a.road||a.suburb||'Seçilen konum';p.addr=(j.display_name||'').split(',').slice(1,4).join(',').trim()}catch{if(stale())return;p.name='Seçilen konum';p.addr=''}drawPill()}}
 function form(){
  let ph=[],tg=[],hr=false;const fr=[...new Set(mem.flatMap(m=>m.tags))];
  open(`<h2>Yeni anı</h2><div class="mut">📍 ${esc(cur.addr||cur.name)}</div>
@@ -112,11 +124,14 @@ const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.m
 let tm,ac;$('#q').oninput=()=>{clearTimeout(tm);tm=setTimeout(search,300)};
 const dist=d=>d<1000?Math.round(d)+' m':(d/1000).toFixed(d<10000?1:0)+' km';
 async function search(){const q=$('#q').value.trim(),R=$('#res');if(q.length<2){R.hidden=true;return}
- const c=map.getCenter();ac&&ac.abort();ac=new AbortController();
- const get=async b=>(await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=20&lat=${c.lat}&lon=${c.lng}${b?`&bbox=${c.lng-.5},${c.lat-.35},${c.lng+.5},${c.lat+.35}`:''}`,{signal:ac.signal})).json()).features||[];
- try{let f=await get(1);if(!f.length)f=await get(0);
-  const L2=f.map(x=>{const p=x.properties,[lo,la]=x.geometry.coordinates;return{lat:la,lng:lo,name:p.name||p.street||'',addr:[p.street,p.district||p.city,p.state].filter(Boolean).join(', '),d:map.distance(c,[la,lo])}}).filter(x=>x.name).sort((a,b)=>a.d-b.d).slice(0,6);
-  R.innerHTML=L2.map((x,i)=>`<div class="it" data-i="${i}"><span class="ic">📍</span><div><b>${esc(x.name)}</b><small>${esc(x.addr)}</small></div><em>${dist(x.d)}</em></div>`).join('')||'<div class="it"><small>Sonuç yok</small></div>';R.hidden=false;
+ const c=map.getCenter();ac&&ac.abort();ac=new AbortController();const sg={signal:ac.signal};
+ const mk=(la,lo,p)=>({lat:la,lng:lo,name:p.name||p.street||'',addr:p.addr,d:map.distance(c,[la,lo])});
+ try{
+  let L2=((await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=30&lat=${c.lat}&lon=${c.lng}&bbox=${c.lng-.5},${c.lat-.35},${c.lng+.5},${c.lat+.35}`,sg)).json()).features||[]).map(x=>{const p=x.properties,[lo,la]=x.geometry.coordinates;p.addr=[p.street,p.district||p.city,p.state].filter(Boolean).join(', ');return mk(la,lo,p)});
+  if(!L2.length){const b=`${c.lng-.5},${c.lat+.35},${c.lng+.5},${c.lat-.35}`;
+   L2=(await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=10&bounded=1&viewbox=${b}&q=${encodeURIComponent(q)}`,sg)).json()).map(x=>mk(+x.lat,+x.lon,{name:x.name||x.display_name.split(',')[0],addr:x.display_name.split(',').slice(1,3).join(',').trim()}))}
+  L2=L2.filter(x=>x.name&&x.d<80000).sort((a,b)=>a.d-b.d).slice(0,6);
+  R.innerHTML=L2.map((x,i)=>`<div class="it" data-i="${i}"><span class="ic">📍</span><div><b>${esc(x.name)}</b><small>${esc(x.addr)}</small></div><em>${dist(x.d)}</em></div>`).join('')||'<div class="it"><small style="white-space:normal">Yakınında bulunamadı. Başka bir şehirdeyse haritayı oraya kaydırıp tekrar dene.</small></div>';R.hidden=false;
   R.querySelectorAll('.it[data-i]').forEach(d=>d.onclick=()=>{const x=L2[d.dataset.i];R.hidden=true;$('#q').value='';$('#q').blur();map.flyTo([x.lat,x.lng],17);showPlace({lat:x.lat,lng:x.lng,name:x.name,addr:x.addr})})}catch(e){}}
 // yedek
 $('#menu').onclick=()=>{open(`<h2>Yedek</h2><div class="mut">Anıların bu cihazda saklanır. Düzenli yedek al.</div>
