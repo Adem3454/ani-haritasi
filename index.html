@@ -115,6 +115,34 @@ nav .plus{flex:none;width:58px;height:58px;border-radius:50%;background:var(--in
 .story img{flex:1;min-height:0;width:100%;object-fit:contain}
 .snop{flex:1;display:flex;align-items:center;justify-content:center;font-size:28px;padding:30px;text-align:center;background:linear-gradient(135deg,var(--acc),var(--cp))}
 .scap{padding:14px 16px calc(env(safe-area-inset-bottom) + 20px);background:linear-gradient(transparent,rgba(0,0,0,.75))}
+
+.sheet{animation:none}
+.fx-ov .ov{animation:fadein .2s ease-out}
+.fx-ov .sheet{animation:up .26s cubic-bezier(.2,.8,.2,1)}
+.ov.out{animation:fadeout .18s ease-in forwards}.ov.out .sheet{animation:down .18s ease-in forwards}
+@keyframes fadein{from{opacity:0}}@keyframes fadeout{to{opacity:0}}@keyframes down{to{transform:translateY(70px)}}
+.appbar{view-transition-name:appbar}nav{view-transition-name:appnav}
+::view-transition-old(root){animation:vtout .15s ease-in both}
+::view-transition-new(root){animation:vtin .24s ease-out both}
+@keyframes vtout{to{opacity:0;transform:translateY(-6px)}}@keyframes vtin{from{opacity:0;transform:translateY(10px)}}
+main.pin{animation:vtin .24s ease-out}
+li.m.swl{display:block;padding:0;position:relative;overflow:hidden}
+.swc{display:flex;align-items:center;gap:10px;padding:12px 0;background:var(--card);position:relative;z-index:1;transition:transform .2s ease;touch-action:pan-y}
+.swd{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--over);color:#fff;font-weight:700}
+.ni{animation:ni .35s cubic-bezier(.2,.8,.2,1)}@keyframes ni{from{opacity:0;transform:translateY(-10px) scale(.98)}}
+.rm{animation:rm .2s ease-in forwards}@keyframes rm{to{opacity:0;transform:translateX(-30px)}}
+.scanbox{position:relative;border-radius:16px;overflow:hidden;margin:14px 0;background:#000}
+.scanbox img{width:100%;max-height:260px;object-fit:cover;display:block;opacity:.9}
+.scanline{position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,#fff,transparent);box-shadow:0 0 14px 4px rgba(255,255,255,.55);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{50%{top:calc(100% - 3px)}}
+.stg{display:flex;align-items:center;gap:10px;font-weight:600;margin:4px 0 12px}
+.stg i{width:10px;height:10px;border-radius:50%;background:var(--acc);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.6);opacity:.45}}
+.skel{margin-bottom:10px}
+.sk{height:14px;border-radius:7px;margin:9px 0;background:linear-gradient(90deg,var(--soft) 25%,var(--line) 50%,var(--soft) 75%);background-size:200% 100%;animation:shim 1.4s linear infinite}
+.w30{width:30%}.w40{width:40%}.w50{width:50%}.w60{width:60%}.w70{width:70%}
+@keyframes shim{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style></head>
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -185,7 +213,7 @@ async function load(){
   db.from('notifications').select('*').order('created_at',{ascending:false}).limit(40)]);
  if(m.error&&f.error){S.offline=true;const c=cget('c_meals');S.meals=[...(c&&c.k===dkey(S.day)?c.m:[]),...queuedFor(a,b)];render();return}
  S.offline=false;if(S.offlineBoot){S.offlineBoot=false;boot();return}
- S.meals=[...(m.data||[]),...queuedFor(a,b)];S.fr=f.data||[];if(!m.error)cset('c_meals',{k:dkey(S.day),m:m.data||[]});
+ const pid=new Set(S.meals.map(x=>x.id)),sd=S.mealsDay===dkey(S.day);S.meals=[...(m.data||[]),...queuedFor(a,b)];S.newIds=sd&&pid.size?new Set(S.meals.filter(x=>!pid.has(x.id)).map(x=>x.id)):new Set();S.mealsDay=dkey(S.day);S.fr=f.data||[];if(!m.error)cset('c_meals',{k:dkey(S.day),m:m.data||[]});
  const nt=n.data||[],ids=[...new Set([...S.fr.flatMap(x=>[x.requester,x.addressee]),...nt.map(x=>x.actor_id)])].filter(i=>i!==S.me.id);
  S.names={};
  S.pr={[S.me.id]:S.p};
@@ -278,7 +306,7 @@ async function loadReport(){
  const{data:wt}=await db.from('weights').select('day,kg').order('day',{ascending:false}).limit(60);S.wt=wt||[];
  const ds=Array.from({length:30},(_,i)=>{const d=new Date(a);d.setDate(a.getDate()+i);return{d,kcal:0,p:0,c:0,f:0,n:0}});
  (data||[]).forEach(m=>{const t=new Date(m.eaten_at);t.setHours(0,0,0,0);const x=ds[Math.round((t-a)/864e5)];if(x){x.kcal+=m.kcal;x.p+=+m.protein||0;x.c+=+m.carbs||0;x.f+=+m.fat||0;x.n++}});
- S.rep=ds;render()}
+ S.rep=ds;vt(render)}
 function reportView(){
  const r=S.rt,g=S.p.daily_goal,ds=S.rep;let b='<div class="empty">Yükleniyor...</div>';
  if(ds&&r==='weight')b=weightView();
@@ -309,7 +337,8 @@ function sheetView(){
 function render(){
  const v=S.tab==='today'?todayView():S.tab==='friends'?friendsView():S.tab==='report'?reportView():S.tab==='notif'?notifView():profileView();
  const pend=S.fr.filter(x=>x.status==='pending'&&x.addressee===S.me.id).length;
- app.innerHTML=appbar()+offBanner()+v+navHtml(pend)+(S.sheet?sheetView():'')+(S.ai?aiView():'')+(S.detail?detailView():'')+(S.zoom?zoomView():'')+(S.bc?bcView():'')+(S.saved?savedBarView():'')+(S.ed?editView():'')+(S.story?storyView():'')}
+ const ovOpen=!!(S.sheet||S.bc||S.ai||S.detail||S.ed);app.classList.toggle('fx-ov',ovOpen&&!S._ov);S._ov=ovOpen;S.newIds=null;
+ app.innerHTML=appbar()+offBanner()+'<main>'+v+'</main>'+navHtml(pend)+(S.sheet?sheetView():'')+(S.ai?aiView():'')+(S.detail?detailView():'')+(S.zoom?zoomView():'')+(S.bc?bcView():'')+(S.saved?savedBarView():'')+(S.ed?editView():'')+(S.story?storyView():'')}
 
 /* ---------- Olaylar ---------- */
 const shift=n=>{S.day=new Date(S.day);S.day.setDate(S.day.getDate()+n);load()};
@@ -318,28 +347,29 @@ app.addEventListener('click',async e=>{
  const el=e.target.closest('[data-act]');if(!el)return;
  if(el.classList.contains('ov')&&e.target!==el)return;
  const a=el.dataset.act,id=el.dataset.id;
+ if(el.classList.contains('swc')){if(Date.now()-lastSwipe<400)return;if(el.classList.contains('open')){el.classList.remove('open');el.style.transform='';return}}
  if(a==='mode'){S.mode=S.mode==='login'?'register':'login';authView()}
- else if(a==='tab'){S.tab=id;S.view=null;if(id==='report')return loadReport();render()}
+ else if(a==='tab'){S.tab=id;S.view=null;if(id==='report')return loadReport();vt(render)}
  else if(a==='prev')shift(-1);else if(a==='next')shift(1);
  else if(a==='add'){S.sheet=true;S.q='';S.qr=null;render();loadFreq()}
- else if(a==='bell'){S.tab='notif';S.view=null;render()}
+ else if(a==='bell'){S.tab='notif';S.view=null;vt(render)}
  else if(a==='qmy')addCopy(S.qr.my[+id]);
  else if(a==='qai')aiText();
- else if(a==='qoff'){const x=S.qr.off[+id];S.sheet=false;S.ai={photos:[],note:'',barcode:true,res:{name:x.name,confidence:'exact',source:'Open Food Facts',questions:['Gramı yediğin miktara göre düzelt.'],items:[{...x}]}};render()}else if(a==='close'){S.sheet=false;render()}
+ else if(a==='qoff'){const x=S.qr.off[+id];S.sheet=false;S.ai={photos:[],note:'',barcode:true,res:{name:x.name,confidence:'exact',source:'Open Food Facts',questions:['Gramı yediğin miktara göre düzelt.'],items:[{...x}]}};render()}else if(a==='close'){dismiss(()=>{S.sheet=false;render()})}
  else if(a==='del'&&id.startsWith('tmp_')){cset('q',Q().filter(x=>x.id!==id));S.stT=0;load()}
- else if(a==='del'){if(confirm('Bu öğün silinsin mi?')){const pm=S.meals.find(x=>x.id===id);const r=await db.from('meals').delete().eq('id',id);if(!r.error&&pm?.photo_path)db.storage.from('meal-photos').remove([pm.photo_path]);if(r.error)toast(trErr(r.error.message));S.detail=null;S.stT=0;load()}}
+ else if(a==='del'){if(el.dataset.nc||confirm('Bu öğün silinsin mi?')){const li=el.closest('li');if(li){li.classList.add('rm');await new Promise(r=>setTimeout(r,200))}const pm=S.meals.find(x=>x.id===id);const r=await db.from('meals').delete().eq('id',id);if(!r.error&&pm?.photo_path)db.storage.from('meal-photos').remove([pm.photo_path]);if(r.error)toast(trErr(r.error.message));S.detail=null;S.stT=0;load()}}
  else if(a==='accept'){await db.from('friendships').update({status:'accepted'}).eq('id',id);toast('Arkadaş eklendi.');load()}
  else if(a==='unfriend'){if(confirm('Bu arkadaşlık/istek kaldırılsın mı?')){await db.from('friendships').delete().eq('id',id);S.view=null;load()}}
  else if(a==='detail'){if(id.startsWith('tmp_'))return toast('Bu öğün henüz gönderilmedi, bağlantı gelince gönderilecek.');S.detail=[...S.meals,...S.feed,...(S.ff||[])].find(x=>x.id===id);S.rx=null;S.pb=null;render();loadRx(id);prefetchPhoto(S.detail)}
- else if(a==='dclose'){S.detail=null;render()}
+ else if(a==='dclose'){dismiss(()=>{S.detail=null;render()})}
  else if(a==='zoom'){S.zoom=S.urls[S.detail.photo_path];render()}
  else if(a==='zclose'){S.zoom=null;render()}
- else if(a==='friend'){S.view={friend:id};markSeen(id);render()}
- else if(a==='fback'){S.view=null;render()}
+ else if(a==='friend'){S.view={friend:id};markSeen(id);vt(render)}
+ else if(a==='fback'){S.view=null;vt(render)}
  else if(a==='rtab'){S.rt=id;render()}
  else if(a==='freq')addCopy(S.freq[+id]);
  else if(a==='scan'){S.sheet=false;S.bc={};render();startScan()}
- else if(a==='bcclose'){await stopScan();S.bc=null;render()}
+ else if(a==='bcclose'){await stopScan();dismiss(()=>{S.bc=null;render()})}
  else if(a==='rx'){const l=S.rx?.list||[],mine=l.find(x=>x.user_id===S.me.id),q=db.from('reactions');
   const r=mine?.emoji===id?await q.delete().eq('meal_id',S.detail.id).eq('user_id',S.me.id):await q.upsert({meal_id:S.detail.id,user_id:S.me.id,emoji:id},{onConflict:'meal_id,user_id'});
   if(r.error)toast(trErr(r.error.message));loadRx(S.detail.id)}
@@ -361,7 +391,7 @@ app.addEventListener('click',async e=>{
  else if(a==='edit'){const m=S.detail,d=new Date(m.eaten_at);
   S.ed={id:m.id,name:m.name,mt:m.meal_type||defType(),shared:m.shared,time:d.toTimeString().slice(0,5),kcal:m.kcal,protein:m.protein,carbs:m.carbs,fat:m.fat,day:m.eaten_at,items:Array.isArray(m.items)&&m.items.length?JSON.parse(JSON.stringify(m.items)):null};
   S.detail=null;render()}
- else if(a==='edclose'){S.ed=null;render()}
+ else if(a==='edclose'){dismiss(()=>{S.ed=null;render()})}
  else if(a==='edel'){readEd();S.ed.items.splice(+id,1);render()}
  else if(a==='edadd'){readEd();S.ed.items.push({...PRE[+id]});render()}
  else if(a==='aifix'){keepName();const it=S.ai.res.items,n=askName(it[+id]);if(n&&n!==it[+id].name)renameItem(it,+id,n,render)}
@@ -392,7 +422,7 @@ app.addEventListener('click',async e=>{
  else if(a==='pushon')pushOn();
  else if(a==='pushoff')pushOff();
  else if(a==='pushtest')pushTest();
- else if(a==='aiclose'){S.ai=null;render()}
+ else if(a==='aiclose'){stagesStop();dismiss(()=>{S.ai=null;render()})}
  else if(a==='analyze')analyze();
  else if(a==='aidel'){S.ai.res.items.splice(+id,1);render()}
  else if(a==='aiadd'){S.ai.res.items.push({...PRE[+id]});render()}
@@ -463,7 +493,7 @@ async function shrink(f,mx=1024){
  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.7));
  const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(blob)});
  return{blob,b64,orig:f,url:URL.createObjectURL(blob)}}
-const VER='v21';
+const VER='v22';
 const mm=x=>{const f=v=>Math.round(x.grams*(+v||0)/100);return dt('cp')+'protein '+f(x.protein_per_100g)+' g '+dt('cc')+'karb. '+f(x.carbs_per_100g)+' g '+dt('cf')+'yağ '+f(x.fat_per_100g)+' g'};
 const im=x=>Math.round(x.grams*(+x.kcal_per_100g||0)/100)+' kcal, '+mm(x);
 function tot(){const it=S.ai.res.items,s=k=>it.reduce((a,x)=>a+x.grams*(+x[k]||0)/100,0);return{kcal:s('kcal_per_100g'),p:s('protein_per_100g'),c:s('carbs_per_100g'),f:s('fat_per_100g')}}
@@ -474,7 +504,7 @@ function recalc(){const t=tot(),f=FJ[S.ai.res.confidence]??.25;
  document.getElementById('tr').textContent=Math.round(t.kcal*(1-f))+' - '+Math.round(t.kcal*(1+f))+' kcal arası'}
 function aiView(){
  const a=S.ai,r=a.res;let b=`<div class="row" style="flex-wrap:wrap;margin-top:12px">${a.photos.map(p=>`<img class="thumb" style="width:72px;height:72px" src="${p.url}" alt="">`).join('')}${!r&&a.photos.length<2?`<label class="btn ghost sm">+ Başka açı<input type="file" accept="image/*" capture="environment" data-pick hidden></label>`:''}</div>`;
- if(!r&&a.text)b+=`<div class="empty">“${esc(a.note)}” hesaplanıyor (10-20 sn)...</div>`;
+ if(!r&&(a.busy||a.text))b+=analyzingHtml(a);
  else if(!r)b+=`<label style="display:block;margin-top:14px">Ek bilgi (isteğe bağlı)</label><input type="text" name="note" value="${esc(a.note)}" placeholder="Örn. yağda kızarmış, 2 dilim ekmek var" maxlength="150"><small class="mute">İpucu: Tabağın yanına çatal ya da elini koy; yukarıdan bir de yandan çek. Porsiyon daha doğru tahmin edilir.</small><button class="btn" style="margin-top:14px" data-act="analyze" ${a.busy?'disabled':''}>${a.busy?'Analiz ediliyor (10-20 sn)...':navigator.onLine?'Analiz et':'Fotoğrafı sakla, sonra analiz et'}</button>${navigator.onLine?`<button class="btn ghost" style="margin-top:8px" data-act="plater" ${a.busy?'disabled':''}>Sonra analiz et</button>`:''}`;
  else if(!r.items?.length)b+=`<div class="empty">Yemek algılanamadı. Daha yakından ve aydınlıkta tekrar dene.</div><button class="btn ghost" data-act="aiclose">Kapat</button>`;
  else{const t=tot(),f=FJ[r.confidence]??.25;
@@ -485,11 +515,11 @@ function aiView(){
   <label>Öğün adı</label><input type="text" name="mname" maxlength="80" value="${esc(r.name||'')}"><label>Öğün</label>${typeSel(defType())}<label class="chk"><input type="checkbox" name="sh" checked> Arkadaşlarım görebilsin</label><button class="btn" data-act="aisave">Kaydet</button>`}
  return`<div class="ov"><div class="sheet"><div class="row sp"><h1 style="font-size:22px">${a.barcode?'Barkoddan ekle':a.text?'Yazıdan ekle':'Fotoğraftan ekle'}</h1><button class="x" data-act="aiclose" aria-label="Kapat">×</button></div>${b}</div></div>`}
 async function analyze(){
- const a=S.ai;a.note=document.querySelector('[name=note]')?.value||'';if(!navigator.onLine)return pendAddFromAi();a.busy=true;render();
+ const a=S.ai;a.note=document.querySelector('[name=note]')?.value||'';if(!navigator.onLine)return pendAddFromAi();a.busy=true;render();stagesStart();
  const call=db.functions.invoke('analyze-meal',{body:{images:a.photos.map(p=>p.b64),note:a.note}});
  const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
  const{data,error}=await Promise.race([call,to]);
- a.busy=false;
+ a.busy=false;stagesStop();
  if(error||!data||data.error||!Array.isArray(data.items)){toast(data?.error||'Analiz yapılamadı. Bağlantını ve kurulumu kontrol et.');return render()}
  data.items=data.items.map(x=>({...x,grams:Math.max(0,+x.grams||0),kcal_per_100g:+x.kcal_per_100g||0}));
  a.orig=JSON.parse(JSON.stringify(data.items));a.res=data;render()}
@@ -513,7 +543,7 @@ app.addEventListener('input',e=>{const t=e.target;if(t.dataset.g!==undefined&&S.
 const TYPES={breakfast:'Kahvaltı',lunch:'Öğle',dinner:'Akşam',snack:'Atıştırmalık'};
 const defType=()=>{const h=new Date().getHours();return h>=4&&h<11?'breakfast':h<16&&h>=11?'lunch':h>=16&&h<22?'dinner':'snack'};
 const typeSel=v=>`<select name="mt">${Object.entries(TYPES).map(([k,t])=>`<option value="${k}" ${k===v?'selected':''}>${t}</option>`).join('')}</select>`;
-const mealLi=m=>`<li class="m tap" data-act="detail" data-id="${m.id}">${th(m)}<div><b>${esc(m.name)}</b><small>${hm(m.eaten_at)}${m._q?', gönderilmedi':''}${m.protein||m.carbs||m.fat?`${dt('cp')}${+m.protein||0}${dt('cc')}${+m.carbs||0}${dt('cf')}${+m.fat||0}`:''}</small></div><span class="k">${m.kcal}</span><button class="x" data-act="del" data-id="${m.id}" aria-label="Sil">×</button></li>`;
+const mealLi=m=>`<li class="m swl${S.newIds?.has(m.id)?' ni':''}"><div class="swc tap" data-act="detail" data-id="${m.id}">${th(m)}<div><b>${esc(m.name)}</b><small>${hm(m.eaten_at)}${m._q?', gönderilmedi':''}${m.protein||m.carbs||m.fat?` ${dt('cp')}${+m.protein||0}${dt('cc')}${+m.carbs||0}${dt('cf')}${+m.fat||0}`:''}</small></div><span class="k">${m.kcal}</span></div><button class="swd" data-act="del" data-nc="1" data-id="${m.id}" aria-label="Sil">Sil</button></li>`;
 function mealList(){
  if(!S.meals.length)return`<div class="empty">Bu gün için öğün yok. “Öğün ekle” ile başla.</div>`;
  return[...Object.keys(TYPES),''].map(t=>{const ms=S.meals.filter(m=>(m.meal_type||'')===t);if(!ms.length)return'';
@@ -731,11 +761,11 @@ async function addCopy(x){
  if(r.error)return toast(trErr(r.error.message));
  S.sheet=false;S.detail=null;S.stT=0;if(!r.queued)toast(x.name+' eklendi. Gramı Düzenle ile değiştirebilirsin.');load()}
 async function aiText(){
- const q=(S.q||'').trim();S.sheet=false;S.ai={photos:[],note:q,text:true,res:null};render();
+ const q=(S.q||'').trim();S.sheet=false;S.ai={photos:[],note:q,text:true,res:null};render();stagesStart();
  const call=db.functions.invoke('analyze-meal',{body:{mode:'text',note:q}});
  const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
  const{data}=await Promise.race([call,to]);
- if(!data||data.error||!Array.isArray(data.items)||!data.items.length){S.ai=null;toast(data?.error||'Hesaplanamadı. Fonksiyonu güncellediğinden emin ol.');return render()}
+ stagesStop();if(!data||data.error||!Array.isArray(data.items)||!data.items.length){S.ai=null;toast(data?.error||'Hesaplanamadı. Fonksiyonu güncellediğinden emin ol.');return render()}
  data.items=data.items.map(x=>({...x,grams:Math.max(0,+x.grams||0),kcal_per_100g:+x.kcal_per_100g||0}));
  S.ai={photos:[],note:q,text:true,orig:JSON.parse(JSON.stringify(data.items)),res:data};render()}
 let qt=null;
@@ -872,9 +902,30 @@ function stGo(d){
  const m=(by[S.story.uid]||[])[S.story.i];if(m)sdone(S.story.uid,m.eaten_at);render();stTick()}
 const qrxRow=m=>`<div class="row" style="padding:0 12px 12px;gap:6px;flex-wrap:wrap">${EM.map(e=>`<button class="btn ghost sm" style="${S.myrx?.[m.id]===e?'background:var(--acc);color:#fff':''}" data-act="qrx" data-id="${m.id}:${e}" aria-label="Tepki ver">${e}</button>`).join('')}</div>`;
 function feedView(){return storyRow()+feedCards()}
+/* ---------- v22: animasyonlar ve analiz ekranı ---------- */
+const vt=fn=>{if(document.startViewTransition&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.startViewTransition(fn);else{fn();const m=app.querySelector('main');if(m)m.classList.add('pin')}};
+function dismiss(fn){const o=app.querySelector('.ov');if(!o){fn();return}o.classList.add('out');setTimeout(fn,180)}
+let lastSwipe=0,sw=null;
+app.addEventListener('touchstart',e=>{const c=e.target.closest('.swc');if(!c)return;const t=e.touches[0];sw={c,x:t.clientX,y:t.clientY,dx:0,open:c.classList.contains('open'),lock:null};c.style.transition='none'},{passive:true});
+app.addEventListener('touchmove',e=>{if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
+ if(sw.lock===null&&(Math.abs(dx)>8||Math.abs(dy)>8))sw.lock=Math.abs(dx)>Math.abs(dy)?'x':'y';
+ if(sw.lock!=='x')return;sw.dx=dx;sw.c.style.transform=`translateX(${Math.max(-80,Math.min(0,(sw.open?-80:0)+dx))}px)`},{passive:true});
+app.addEventListener('touchend',()=>{if(!sw)return;const{c,dx,open,lock}=sw;sw=null;c.style.transition='';
+ if(lock!=='x'){c.style.transform=open?'translateX(-80px)':'';return}
+ lastSwipe=Date.now();const opn=(open?-80:0)+dx<-40;c.style.transform=opn?'translateX(-80px)':'';c.classList.toggle('open',opn)},{passive:true});
+const STAGES=['Fotoğraf okunuyor...','Yemekler ayırt ediliyor...','Porsiyonlar tahmin ediliyor...','Kaloriler ve makrolar hesaplanıyor...','Son kontroller yapılıyor...'];
+const TSTAGES=['Yazdığın yemek anlaşılıyor...','Porsiyonlar tahmin ediliyor...','Kaloriler ve makrolar hesaplanıyor...'];
+let stI=null;
+const stagesStop=()=>clearInterval(stI);
+function stagesStart(){stagesStop();let k=0;const L=S.ai?.text?TSTAGES:STAGES;
+ stI=setInterval(()=>{k=Math.min(k+1,L.length-1);const e=document.getElementById('stg');if(e)e.textContent=L[k]},3500)}
+function analyzingHtml(a){
+ const p=a.photos?.[0],L=a.text?TSTAGES:STAGES;
+ return`${p?`<div class="scanbox"><img src="${p.url}" alt=""><div class="scanline"></div></div>`:''}<div class="stg" role="status"><i></i><span id="stg">${L[0]}</span></div>
+ <div class="card skel"><div class="sk w40"></div><div class="sk w70"></div></div><div class="card skel"><div class="sk w60"></div><div class="sk w30"></div><div class="sk w50"></div></div>`}
 let refreshing=false;
 async function refresh(){
- if(!S.me||refreshing||document.hidden||S.sheet||S.bc||S.ed||S.story||S.ai||S.detail||S.zoom||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;
+ if(!S.me||refreshing||document.hidden||app.querySelector('.swc.open')||S.sheet||S.bc||S.ed||S.story||S.ai||S.detail||S.zoom||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;
  refreshing=true;try{await flushQueue();await load()}catch{}finally{refreshing=false}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(refresh,30000);
