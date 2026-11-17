@@ -1,143 +1,883 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF1EC">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Anılar">
-<title>Anı Haritası</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kalori">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Kalori</title>
 <style>
-:root{--bg:#fff;--fg:#1d1d1f;--mut:#86868b;--card:#f2f2f4;--ac:#ff4d6d;--gl:rgba(255,255,255,.8)}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f5f5f7;--card:#2c2c2e;--gl:rgba(28,28,30,.8)}}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;font:16px -apple-system,system-ui,sans-serif;color:var(--fg);background:var(--bg)}
-#map{position:absolute;inset:0}
-.gl{background:var(--gl);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 4px 20px #0003}
-#top{position:absolute;z-index:1000;top:calc(env(safe-area-inset-top) + 10px);left:12px;right:12px}
-#bar{display:flex;align-items:center;gap:10px;padding:0 16px;height:50px;border-radius:25px}
-#q{flex:1;border:0;background:none;color:var(--fg);font-size:17px;outline:none;min-width:0}
-#res{margin-top:8px;border-radius:20px;overflow:hidden}
-.it{display:flex;align-items:center;gap:12px;padding:12px 16px}.it+.it{border-top:1px solid #8883}
-.it .ic{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;flex:none}
-.it div{flex:1;min-width:0}.it b,.it small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.it small,.mut{color:var(--mut);font-size:13px}.it em{font:12px system-ui;color:var(--mut);font-style:normal}
-#fabs{position:absolute;z-index:1000;right:12px;bottom:calc(env(safe-area-inset-bottom) + 28px);display:flex;flex-direction:column;gap:12px}
-.fab{width:52px;height:52px;border-radius:50%;border:0;font-size:22px;color:var(--fg)}
-.fab.p{background:var(--ac);color:#fff;font-size:30px;box-shadow:0 4px 16px #ff4d6d88}
-body.so #fabs{display:none}
-#sheet{position:absolute;z-index:1001;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);max-height:80%;overflow:auto;border-radius:28px;padding:10px 18px 18px;transform:translateY(120%);transition:.3s cubic-bezier(.2,.8,.2,1)}
-#sheet.on{transform:none}
-#sheet>i{display:block;width:38px;height:5px;border-radius:3px;background:var(--mut);opacity:.4;margin:0 auto 12px}
-h2{margin:0 0 2px;font-size:22px}
-input,textarea{width:100%;padding:13px 14px;margin:5px 0;border:0;border-radius:14px;background:var(--card);color:var(--fg);font:inherit;outline:none}
-.btn{border:0;border-radius:14px;padding:14px;font:600 16px system-ui;background:var(--ac);color:#fff;width:100%;margin-top:8px}
-.btn.g{background:var(--card);color:var(--fg)}
-.row{display:flex;gap:8px}
-.pv{display:flex;gap:8px;overflow-x:auto;padding:6px 0}
-.th{flex:none;width:78px;height:78px;border-radius:16px;background:var(--card) center/cover;position:relative;display:grid;place-items:center;font-size:28px;color:var(--mut)}
-.th b{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:#000a;color:#fff;font-size:14px;display:grid;place-items:center}
-.ph{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -4px}
-.ph img{height:260px;max-width:90%;border-radius:20px;scroll-snap-align:center;object-fit:cover}
-.chip{display:inline-block;background:var(--card);border-radius:20px;padding:6px 12px;margin:3px 3px 3px 0;font-size:14px}
-.pin{width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:#ffd6de center/cover;box-shadow:0 3px 10px #0006;display:grid;place-items:center;font-size:22px;position:relative}
-.pin i{position:absolute;right:-6px;bottom:-4px;font-size:15px;font-style:normal}
-.pin.big{width:56px;height:56px}.pin.big b{position:absolute;right:-6px;top:-6px;background:var(--ac);color:#fff;font:700 12px system-ui;border-radius:10px;padding:2px 7px}
-.drop{width:28px;height:28px;background:var(--ac);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px #0006}
-.me{background:#0a84ff;border:3px solid #fff}
-#pill{position:absolute;z-index:1000;left:12px;right:76px;bottom:calc(env(safe-area-inset-bottom) + 28px);display:none;align-items:center;gap:8px;padding:8px 8px 8px 18px;border-radius:30px}
-#pill.on{display:flex}#pill div{flex:1;min-width:0}#pill b,#pill small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#pill small{color:var(--mut);font-size:12px}
-#pill .btn{width:auto;margin:0;padding:11px 14px;white-space:nowrap}
-#pill .x{border:0;background:var(--card);color:var(--fg);width:36px;height:36px;border-radius:50%;font-size:18px;flex:none}
-#toast{position:absolute;z-index:1002;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 76px);padding:12px 16px;border-radius:16px;font-size:14px;display:none}
-.leaflet-control-attribution{font-size:9px;opacity:.7}
-</style></head><body>
-<div id="map"></div>
-<div id="top"><div id="bar" class="gl">🔍<input id="q" placeholder="Mekan ara…" autocomplete="off"></div><div id="res" class="gl" hidden></div></div>
-<div id="fabs"><button class="fab gl" id="menu">⋯</button><button class="fab gl" id="loc">➤</button><button class="fab p" id="add">+</button></div>
-<div id="pill" class="gl"></div><div id="toast" class="gl"></div><div id="sheet" class="gl"></div><input type="file" id="imp" accept=".json" hidden>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+:root{--bg:#EEF1EC;--ink:#14231F;--mute:#5E6E69;--card:#fff;--line:#DDE3DD;--acc:#3D3BC8;--sun:#FFB703;--over:#D9480F;color-scheme:light}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 ui-rounded,"SF Pro Rounded",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+#app{max-width:480px;margin:0 auto;min-height:100%;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 84px)}
+h1{font-size:28px;letter-spacing:-.02em}h2{font-size:18px;margin:22px 0 8px}
+small,.mute{color:var(--mute);font-size:13px}
+button,input{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:var(--card);border-radius:18px;padding:16px;border:1px solid var(--line)}
+.btn{background:var(--acc);color:#fff;border-radius:14px;padding:13px 18px;font-weight:650;width:100%}
+.btn.ghost{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
+.btn.sm{width:auto;padding:8px 14px;font-size:14px;border-radius:10px}
+input[type=text],input[type=email],input[type=password],input[type=number]{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);margin:4px 0 12px}
+label{font-size:13px;color:var(--mute)}
+.row{display:flex;gap:10px;align-items:center}.sp{justify-content:space-between}
+.days{display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px}
+.days button{font-size:26px;padding:4px 14px;color:var(--acc)}
+.ring{display:flex;align-items:center;gap:18px}
+.ring svg{flex:none;transform:rotate(-90deg)}
+.big{font-size:44px;font-weight:750;letter-spacing:-.03em;line-height:1}
+.macros{display:flex;gap:18px;margin-top:12px}.macros b{display:block;font-size:17px}
+ul{list-style:none;padding:0}
+li.m{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+li.m:last-child{border:0}li.m div{flex:1;min-width:0}li.m b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.k{font-weight:700}.x{color:var(--mute);font-size:22px;padding:2px 8px}
+.empty{padding:22px 4px;text-align:center;color:var(--mute)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--navbg);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(env(safe-area-inset-bottom) + 6px)}
+nav div{max-width:480px;margin:auto;display:flex}
+nav button{flex:1;padding:12px 4px;border-radius:12px;font-weight:600;color:var(--mute)}
+nav button.on{color:var(--acc);background:var(--card)}
+.fab{color:#14231F;position:fixed;right:max(16px,calc(50% - 224px));bottom:calc(env(safe-area-inset-bottom) + 78px);background:var(--sun);color:var(--ink);font-weight:750;border-radius:999px;padding:14px 22px;box-shadow:0 6px 18px rgba(20,35,31,.22)}
+.ov{position:fixed;inset:0;background:rgba(20,35,31,.45);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.sheet{background:var(--bg);width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:92%;overflow:auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none}}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.chk{display:flex;gap:10px;align-items:center;margin:4px 0 16px;color:var(--ink);font-size:15px}.chk input{width:20px;height:20px}
+.toast{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:9;max-width:90%;font-size:14px}
+.auth{padding-top:9vh}.auth h1{margin-bottom:6px}.auth p{margin-bottom:22px}
+.link{color:var(--acc);font-weight:650;margin-top:16px;display:block;width:100%;text-align:center}
+.thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 8px}
+label.btn{display:block;text-align:center;cursor:pointer;margin:0;color:#fff}
+label.btn.ghost{color:var(--acc)}
+.btn:disabled{opacity:.6}
+.it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.it small{display:block}
+.av{border-radius:50%;object-fit:cover;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex:none}
+.frow{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;width:100%;text-align:left}
+.frow small{color:var(--mute)}.newb{color:var(--acc);font-weight:700}
+.tap{cursor:pointer}
+.hero{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;margin:12px 0;cursor:zoom-in}
+.zoom{position:fixed;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center}.zoom img{max-width:100%;max-height:100%}
+select{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);margin:4px 0 12px;font:inherit}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;margin-bottom:14px}.seg button{flex:1;padding:9px;border-radius:10px;font-weight:600;color:var(--mute)}.seg button.on{background:var(--card);color:var(--acc)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:130px;position:relative}.bars i{flex:1;background:var(--acc);border-radius:4px 4px 0 0;min-height:2px}.bars i.over{background:var(--over)}
+.gl{position:absolute;left:0;right:0;border-top:2px dashed var(--sun)}
+.bl{display:flex;gap:3px;margin-top:4px}.bl span{flex:1;text-align:center;font-size:11px;color:var(--mute)}
+.mbar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:12px 0;background:var(--soft)}.mbar i{display:block}
+.big small{font-size:16px;font-weight:500;color:var(--mute)}
+.gh{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px;border-bottom:1px solid var(--line)}
+
+:root{--soft:#E3E8E3;--navbg:rgba(238,241,236,.94)}
+:root[data-theme=dark]{--bg:#0F1715;--ink:#E7EEEA;--mute:#93A39D;--card:#17221F;--line:#26332F;--acc:#7C7AF5;--over:#FF8A4C;--soft:#26332F;--navbg:rgba(15,23,21,.94);color-scheme:dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F1715;--ink:#E7EEEA;--mute:#93A39D;--card:#17221F;--line:#26332F;--acc:#7C7AF5;--over:#FF8A4C;--soft:#26332F;--navbg:rgba(15,23,21,.94);color-scheme:dark}}
+select{color:var(--ink)}
+.sbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 134px);max-width:456px;margin:auto;background:var(--ink);color:var(--bg);padding:10px 12px;border-radius:14px;display:flex;gap:10px;align-items:center;z-index:8;font-size:14px}
+.sbar .x{color:var(--bg)}
+nav button{font-size:14px}
+input[type=time]{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);margin:4px 0 12px;color:var(--ink)}
+
+:root{--cp:#E5484D;--cc:#F5A524;--cf:#3B82F6}
+:root[data-theme=dark]{--cp:#FF6B70;--cc:#FFC04D;--cf:#6AA3FF}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--cp:#FF6B70;--cc:#FFC04D;--cf:#6AA3FF}}
+.d{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 4px 0 8px;vertical-align:middle}
+.macros .k-p{border-top:3px solid var(--cp);padding-top:6px}.macros .k-c{border-top:3px solid var(--cc);padding-top:6px}.macros .k-f{border-top:3px solid var(--cf);padding-top:6px}
+#app{padding-top:calc(env(safe-area-inset-top) + 58px)}
+.appbar{position:fixed;top:0;left:0;right:0;z-index:4;background:var(--navbg);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 6px) 16px 6px}
+.appbar>div{max-width:480px;margin:auto;display:flex;justify-content:space-between;align-items:center}
+.bell{position:relative;padding:6px;color:var(--ink)}
+.nb{position:absolute;top:-2px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:var(--over);color:#fff;font:700 10px/17px system-ui;font-style:normal;text-align:center;padding:0 4px}
+nav div{align-items:center}
+nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:8px 2px;position:relative}
+nav button.on{background:transparent;color:var(--acc)}
+nav .nb{top:2px;right:calc(50% - 24px)}
+nav .plus{flex:none;width:58px;height:58px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:34px;font-weight:400;line-height:1;margin:-26px 6px 0;padding:0;justify-content:center;box-shadow:0 6px 16px rgba(20,35,31,.25)}
+.sbox{display:flex;align-items:center;gap:6px;background:var(--soft);border-radius:14px;padding:3px 6px 3px 12px;margin:14px 0 8px;color:var(--mute)}
+.sbox input{flex:1;min-width:0;border:0;background:transparent;margin:0;padding:11px 4px;font-size:16px;color:var(--ink);outline:none}
+.sbox .bcb{padding:8px;border-radius:10px;color:var(--ink)}
+.mini{font-size:12px;color:var(--acc);padding:3px 8px 3px 0;text-align:left;font-weight:600}
+.offb{background:var(--soft);border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:10px;color:var(--ink)}
+.stories{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;margin:0 -2px}
+.stc{flex:none;width:68px;text-align:center}.stc small{display:block;margin-top:4px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.ring2{padding:3px;border-radius:50%;background:conic-gradient(var(--acc),var(--cp),var(--cc),var(--acc));display:inline-block}.ring2.off{background:var(--line)}
+.ring2>div{background:var(--bg);padding:2px;border-radius:50%;line-height:0}
+.story{position:fixed;inset:0;background:#000;z-index:30;color:#fff;display:flex;flex-direction:column}
+.sbars{display:flex;gap:4px;padding:calc(env(safe-area-inset-top) + 8px) 10px 0}.sbars span{flex:1;height:3px;background:rgba(255,255,255,.35);border-radius:2px;overflow:hidden}
+.sbars i{display:block;height:100%;background:#fff;width:0}.sbars .done i{width:100%}.sbars .cur i{animation:stfill 5s linear forwards}
+@keyframes stfill{from{width:0}to{width:100%}}
+@media(prefers-reduced-motion:reduce){.sbars .cur i{animation:none;width:100%}}
+.shead{display:flex;align-items:center;gap:8px;padding:10px 12px}.shead small{color:rgba(255,255,255,.7)}.shead .x{margin-left:auto;color:#fff;font-size:32px}
+.story img{flex:1;min-height:0;width:100%;object-fit:contain}
+.snop{flex:1;display:flex;align-items:center;justify-content:center;font-size:28px;padding:30px;text-align:center;background:linear-gradient(135deg,var(--acc),var(--cp))}
+.scap{padding:14px 16px calc(env(safe-area-inset-bottom) + 20px);background:linear-gradient(transparent,rgba(0,0,0,.75))}
+</style></head>
+<body><div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
 <script>
-const $=s=>document.querySelector(s),esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const dbp=new Promise(r=>{const q=indexedDB.open('anilar',1);q.onupgradeneeded=()=>q.result.createObjectStore('m',{keyPath:'id'});q.onsuccess=()=>r(q.result)});
-const tx=async(mode,fn)=>{const db=await dbp;return new Promise((res,rej)=>{const t=db.transaction('m',mode);const rq=fn(t.objectStore('m'));t.oncomplete=()=>res(rq.result);t.onerror=rej})};
-const all=()=>tx('readonly',s=>s.getAll()),put=m=>tx('readwrite',s=>s.put(m)),del=id=>tx('readwrite',s=>s.delete(id));
-const map=L.map('map',{zoomControl:false}).setView([41.0082,28.9784],13);
-map.attributionControl.setPrefix(false);
-const CARTO_KEY=''; // istersen carto.com/basemaps/apikey adresinden ücretsiz anahtar al, buraya yapıştır
-L.tileLayer(CARTO_KEY?`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap'+(CARTO_KEY?' © CARTO':'')}).addTo(map);
-const cl=L.markerClusterGroup({maxClusterRadius:60,iconCreateFunction:c=>{const ms=c.getAllChildMarkers(),th=ms.find(m=>m.options.th);
- return L.divIcon({className:'',iconSize:[56,56],html:`<div class="pin big" style="${th?`background-image:url(${th.options.th})`:''}"><b>${ms.length}</b></div>`})}});
-map.addLayer(cl);
-let mem=[],temp,cur,busy=false,me;
-async function render(){mem=await all();cl.clearLayers();for(const m of mem){const th=m.photos[0]||'';
- const mk=L.marker([m.lat,m.lng],{th,icon:L.divIcon({className:'',iconSize:[48,48],html:`<div class="pin" style="${th?`background-image:url(${th})`:''}">${th?'':'📍'}${m.heart?'<i>❤️</i>':''}</div>`})});
- mk.on('click',e=>{L.DomEvent.stopPropagation(e);detail(m)});cl.addLayer(mk)}}
-// konum
-const toast=t=>{const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',7000)};
-const setMe=ll=>{me?me.setLatLng(ll):me=L.marker(ll,{interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],html:'<div class="pin me" style="width:18px;height:18px"></div>'})}).addTo(map)};
-const locate=first=>{if(!navigator.geolocation)return toast('Bu cihaz konumu desteklemiyor');
- navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];try{localStorage.setItem('last',JSON.stringify(ll))}catch{}setMe(ll);first?map.setView(ll,16):map.flyTo(ll,16)},
- e=>toast(e.code==1?'Konum izni kapalı. iPhone: Ayarlar → Gizlilik ve Güvenlik → Konum Servisleri → Safari Web Siteleri → "Uygulamayı Kullanırken" seç.':'Konum alınamadı, 📍 butonuyla tekrar dene.'),{enableHighAccuracy:true,timeout:12000,maximumAge:30000})};
-try{const l=JSON.parse(localStorage.getItem('last'));if(l)map.setView(l,16)}catch{}
-$('#loc').onclick=()=>locate();locate(true);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)locate(true)});
-// sheet
-const sheet=$('#sheet'),pill=$('#pill');
-const hideSheet=()=>{sheet.classList.remove('on');document.body.classList.remove('so');busy=false};
-const open=(h,b)=>{pill.classList.remove('on');sheet.innerHTML='<i></i>'+h;sheet.classList.add('on');document.body.classList.add('so');busy=!!b;$('#res').hidden=true};
-const close=()=>{hideSheet();pill.classList.remove('on');if(temp){map.removeLayer(temp);temp=null}};
-map.on('click',e=>{if(busy)return;$('#q').blur();showPlace({lat:e.latlng.lat,lng:e.latlng.lng})});
-$('#add').onclick=()=>{const c=map.getCenter();showPlace({lat:c.lat,lng:c.lng})};
-const drawPill=()=>{pill.innerHTML=`<div><b>${esc(cur.name||'Konum seçildi')}</b><small>${esc(cur.addr||'Adres aranıyor…')}</small></div><button class="btn" id="a">＋ Anı</button><button class="x" id="px">×</button>`;pill.classList.add('on');$('#a').onclick=()=>form();$('#px').onclick=close};
-async function showPlace(p){
- hideSheet();if(temp)map.removeLayer(temp);temp=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',iconSize:[28,28],iconAnchor:[14,28],html:'<div class="drop"></div>'})}).addTo(map);cur=p;drawPill();
- const stale=()=>cur!==p||busy||sheet.classList.contains('on');
- if(!p.name){try{const j=await(await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&accept-language=tr&lat=${p.lat}&lon=${p.lng}`)).json();
-  if(stale())return;const a=j.address||{};p.name=j.name||a.road||a.suburb||'Seçilen konum';p.addr=(j.display_name||'').split(',').slice(1,4).join(',').trim()}catch{if(stale())return;p.name='Seçilen konum';p.addr=''}drawPill()}}
-function form(){
- let ph=[],tg=[],hr=false;const fr=[...new Set(mem.flatMap(m=>m.tags))];
- open(`<h2>Yeni anı</h2><div class="mut">📍 ${esc(cur.addr||cur.name)}</div>
- <input id="t" value="${esc(cur.name)}" placeholder="Başlık"><div id="pv" class="pv"></div>
- <textarea id="c" rows="3" placeholder="Ne yaşandı? Bir not bırak…"></textarea>
- <div id="ch"></div><input id="g" list="fl" placeholder="👥 Kimlerle? İsim yaz, Enter'a bas"><datalist id="fl">${fr.map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
- <div class="row"><input id="d" type="date" value="${new Date().toISOString().slice(0,10)}"><button class="btn g" id="h" style="width:64px;margin:5px 0">🤍</button></div>
- <div class="row"><button class="btn g" id="x">Vazgeç</button><button class="btn" id="s">Kaydet</button></div>`,1);
- const rp=()=>{$('#pv').innerHTML=ph.map((s,i)=>`<div class="th" style="background-image:url(${s})" data-i="${i}"><b>×</b></div>`).join('')+'<label class="th">＋<input id="f" type="file" accept="image/*" multiple hidden></label>';
-  $('#f').onchange=async e=>{for(const f of e.target.files)ph.push(await shrink(f));rp()};
-  $('#pv').querySelectorAll('[data-i]').forEach(d=>d.onclick=()=>{ph.splice(d.dataset.i,1);rp()})};rp();
- const rc=()=>{$('#ch').innerHTML=tg.map((t,i)=>`<span class="chip" data-i="${i}">👥 ${esc(t)} ×</span>`).join('');$('#ch').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{tg.splice(c.dataset.i,1);rc()})};
- const addT=()=>{const v=$('#g').value.replace(',','').trim();if(v&&!tg.includes(v))tg.push(v);$('#g').value='';rc()};
- $('#g').onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addT()}};$('#g').onblur=addT;
- $('#h').onclick=()=>{hr=!hr;$('#h').textContent=hr?'❤️':'🤍'};$('#x').onclick=close;
- $('#s').onclick=async()=>{addT();await put({id:Date.now()+'',lat:cur.lat,lng:cur.lng,title:$('#t').value||'Anı',place:cur.name,text:$('#c').value,tags:tg,date:$('#d').value,photos:ph,heart:hr});close();render()}}
-function detail(m){
- open(`${m.photos.length?`<div class="ph">${m.photos.map(s=>`<img src="${s}">`).join('')}</div>`:''}
- <h2 style="margin-top:12px">${esc(m.title)} ${m.heart?'❤️':''}</h2><div class="mut">📍 ${esc(m.place||'')} · ${esc(m.date)}</div>
- <p>${esc(m.text)}</p><div>${m.tags.map(t=>`<span class="chip">👥 ${esc(t)}</span>`).join('')}</div>
- <div class="row"><button class="btn g" id="h">${m.heart?'❤️':'🤍'}</button><button class="btn g" id="r">🗑️</button><button class="btn" id="x">Kapat</button></div>`);
- $('#x').onclick=close;$('#h').onclick=async()=>{m.heart=!m.heart;await put(m);detail(m);render()};
- $('#r').onclick=async()=>{if(confirm('Bu anı silinsin mi?')){await del(m.id);close();render()}}}
-const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};i.src=URL.createObjectURL(f)});
-// arama: yazarken, haritanın bulunduğu yere yakın sonuçlar
-let tm,ac;$('#q').oninput=()=>{clearTimeout(tm);tm=setTimeout(search,300)};
-const dist=d=>d<1000?Math.round(d)+' m':(d/1000).toFixed(d<10000?1:0)+' km';
-async function search(){const q=$('#q').value.trim(),R=$('#res');if(q.length<2){R.hidden=true;return}
- const c=map.getCenter();ac&&ac.abort();ac=new AbortController();const sg={signal:ac.signal};
- const mk=(la,lo,p)=>({lat:la,lng:lo,name:p.name||p.street||'',addr:p.addr,d:map.distance(c,[la,lo])});
- try{
-  let L2=((await(await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=30&lat=${c.lat}&lon=${c.lng}&bbox=${c.lng-.5},${c.lat-.35},${c.lng+.5},${c.lat+.35}`,sg)).json()).features||[]).map(x=>{const p=x.properties,[lo,la]=x.geometry.coordinates;p.addr=[p.street,p.district||p.city,p.state].filter(Boolean).join(', ');return mk(la,lo,p)});
-  if(!L2.length){const b=`${c.lng-.5},${c.lat+.35},${c.lng+.5},${c.lat-.35}`;
-   L2=(await(await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=10&bounded=1&viewbox=${b}&q=${encodeURIComponent(q)}`,sg)).json()).map(x=>mk(+x.lat,+x.lon,{name:x.name||x.display_name.split(',')[0],addr:x.display_name.split(',').slice(1,3).join(',').trim()}))}
-  L2=L2.filter(x=>x.name&&x.d<80000).sort((a,b)=>a.d-b.d).slice(0,6);
-  R.innerHTML=L2.map((x,i)=>`<div class="it" data-i="${i}"><span class="ic">📍</span><div><b>${esc(x.name)}</b><small>${esc(x.addr)}</small></div><em>${dist(x.d)}</em></div>`).join('')||'<div class="it"><small style="white-space:normal">Yakınında bulunamadı. Başka bir şehirdeyse haritayı oraya kaydırıp tekrar dene.</small></div>';R.hidden=false;
-  R.querySelectorAll('.it[data-i]').forEach(d=>d.onclick=()=>{const x=L2[d.dataset.i];R.hidden=true;$('#q').value='';$('#q').blur();map.flyTo([x.lat,x.lng],17);showPlace({lat:x.lat,lng:x.lng,name:x.name,addr:x.addr})})}catch(e){}}
-// yedek
-$('#menu').onclick=()=>{open(`<h2>Yedek</h2><div class="mut">Anıların bu cihazda saklanır. Düzenli yedek al.</div>
- <button class="btn" id="e">Yedeği indir</button><button class="btn g" id="i">Yedekten yükle</button><button class="btn g" id="x">Kapat</button>`);
- $('#x').onclick=close;$('#i').onclick=()=>$('#imp').click();
- $('#e').onclick=async()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(await all())],{type:'application/json'}));a.download='anilar.json';a.click()}};
-$('#imp').onchange=async e=>{for(const m of JSON.parse(await e.target.files[0].text()))await put(m);close();render()};
-render();
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const app=document.getElementById('app');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S={tab:'today',day:new Date(),meals:[],fr:[],names:{},feed:[],sheet:false,mode:'login',urls:{},ai:null,pr:{},av:{},view:null,detail:null,zoom:null,body:null,rep:null,rt:'week'};
+const range=d=>{const a=new Date(d);a.setHours(0,0,0,0);const b=new Date(a);b.setDate(b.getDate()+1);return[a.toISOString(),b.toISOString()]};
+const hm=t=>new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),3200)}
+function trErr(m=''){
+ if(/Invalid login/i.test(m))return'E-posta veya şifre hatalı.';
+ if(/already registered/i.test(m))return'Bu e-posta zaten kayıtlı.';
+ if(/at least 6/i.test(m))return'Şifre en az 6 karakter olmalı.';
+ if(/Database error saving/i.test(m))return'Kullanıcı adı alınmış ya da geçersiz. Harf, rakam ve _ kullan (3-20 karakter).';
+ if(/duplicate key/i.test(m))return'Bu istek zaten var.';
+ return m}
+
+/* ---------- Giriş ---------- */
+function authView(){
+ const reg=S.mode==='register';
+ app.innerHTML=`<div class="auth"><h1>Kalori</h1><p class="mute">${reg?'Hesap oluştur, öğünlerini kaydetmeye başla.':'Hesabınla giriş yap.'}</p>
+ <form data-form="auth">
+ ${reg?`<label>Kullanıcı adı (arkadaşların seni bununla bulur)</label><input type="text" name="username" required pattern="[a-zA-Z0-9_çğıöşüÇĞİÖŞÜ]{3,20}" autocapitalize="none" autocomplete="username"><small class="mute" style="display:block;margin:-8px 0 12px">3-20 karakter: harf (ç, ğ, ı, ö, ş, ü dahil), rakam, _</small>`:''}
+ <label>E-posta</label><input type="email" name="email" required autocomplete="email">
+ <label>Şifre</label><input type="password" name="password" required minlength="6" autocomplete="${reg?'new-password':'current-password'}">
+ <button class="btn">${reg?'Hesap oluştur':'Giriş yap'}</button></form>
+ <button class="link" data-act="mode">${reg?'Zaten hesabım var':'Yeni hesap oluştur'}</button></div>`}
+
+async function submitAuth(f){
+ if(!navigator.onLine)return toast('İnternet yok. Giriş yapmak için bağlantı gerekir.');
+ const email=f.get('email'),password=f.get('password');let r;
+ if(S.mode==='login')r=await db.auth.signInWithPassword({email,password});
+ else r=await db.auth.signUp({email,password,options:{data:{username:(f.get('username')||'').trim().toLocaleLowerCase('tr')}}});
+ if(r.error)return toast(trErr(r.error.message));
+ if(!r.data.session){toast('Kayıt oluştu. E-postanı onaylayıp giriş yap.');S.mode='login';return authView()}
+ boot()}
+
+/* ---------- Veri ---------- */
+function offlineBoot(){
+ const me=cget('c_me');S.me=me;S.p=cget('c_p');S.body=cget('c_body');S.pr={[me.id]:S.p};S.names={};S.fr=[];S.feed=[];S.offline=true;S.offlineBoot=true;
+ const[a,b]=range(S.day),c=cget('c_meals');S.meals=[...(c&&c.k===dkey(S.day)?c.m:[]),...queuedFor(a,b)];render();loadPend().then(render)}
+async function boot(){
+ let session=null,slow=false;
+ try{session=await Promise.race([db.auth.getSession().then(r=>r.data.session),new Promise(r=>setTimeout(()=>{slow=true;r(null)},4000))])}catch{}
+ const cached=cget('c_me')&&cget('c_p');
+ if(!session&&cached&&(!navigator.onLine||slow))return offlineBoot();
+ if(!session)return authView();
+ S.me=session.user;
+ if(!navigator.onLine&&cached)return offlineBoot();
+ const pr=await db.from('profiles').select('*').eq('id',S.me.id).single();let p=pr.data;
+ if(!p){if(cached&&(!navigator.onLine||isNet(pr.error)))return offlineBoot();await db.auth.signOut();return authView()}
+ S.p=p;cset('c_me',{id:S.me.id,email:S.me.email});cset('c_p',p);
+ {const{data:bi}=await db.from('body_info').select('*').maybeSingle();S.body=bi;cset('c_body',bi)}
+ {const pl=planOf();if(pl&&pl.kcal!==S.p.daily_goal){const r=await db.from('profiles').update({daily_goal:pl.kcal}).eq('id',S.me.id);if(!r.error){S.p.daily_goal=pl.kcal;toast('Günlük hedefin güncellendi: '+pl.kcal+' kcal')}}}
+ {const{data:np}=await db.from('notif_prefs').select('*').maybeSingle();S.np=np}
+ await cleanupPhotos();
+ await load();flushQueue();loadPend().then(render)}
+
+async function load(){
+ const[a,b]=range(S.day);
+ const[m,f,n]=await Promise.all([
+  db.from('meals').select('*').eq('user_id',S.me.id).gte('eaten_at',a).lt('eaten_at',b).order('eaten_at'),
+  db.from('friendships').select('*'),
+  db.from('notifications').select('*').order('created_at',{ascending:false}).limit(40)]);
+ if(m.error&&f.error){S.offline=true;const c=cget('c_meals');S.meals=[...(c&&c.k===dkey(S.day)?c.m:[]),...queuedFor(a,b)];render();return}
+ S.offline=false;if(S.offlineBoot){S.offlineBoot=false;boot();return}
+ S.meals=[...(m.data||[]),...queuedFor(a,b)];S.fr=f.data||[];if(!m.error)cset('c_meals',{k:dkey(S.day),m:m.data||[]});
+ const nt=n.data||[],ids=[...new Set([...S.fr.flatMap(x=>[x.requester,x.addressee]),...nt.map(x=>x.actor_id)])].filter(i=>i!==S.me.id);
+ S.names={};
+ S.pr={[S.me.id]:S.p};
+ if(ids.length){const{data:ps}=await db.from('profiles').select('id,username,avatar_path,daily_goal').in('id',ids);(ps||[]).forEach(p=>{S.names[p.id]=p.username;S.pr[p.id]=p})}
+ const fids=S.fr.filter(x=>x.status==='accepted').map(x=>x.requester===S.me.id?x.addressee:x.requester);
+ S.feed=[];
+ if(fids.length){const{data:fm}=await db.from('meals').select('*').in('user_id',fids).gte('eaten_at',a).lt('eaten_at',b).order('eaten_at',{ascending:false});S.feed=fm||[]}
+ S.ff=[];if(S.tab==='friends'&&S.fsub==='feed'&&fids.length){const w=new Date();w.setDate(w.getDate()-7);const{data:ff}=await db.from('meals').select('*').in('user_id',fids).gte('eaten_at',w.toISOString()).order('eaten_at',{ascending:false}).limit(40);S.ff=ff||[]}
+ {const old=new Set((S.nt||[]).map(x=>x.id));S.nt=nt;
+  if(S.ntLoaded){const nw=nt.filter(x=>!x.read&&!old.has(x.id));if(nw.length)toast(ntText(nw[0])+(nw.length>1?` (+${nw.length-1})`:''))}
+  S.ntLoaded=true}
+ if(!S.stT||Date.now()-S.stT>120000){S.stT=Date.now();await loadStreaks([S.me.id,...fids])}
+ const ps=[...S.meals,...S.feed,...(S.ff||[])].map(m=>m.photo_path).filter(Boolean);S.urls={};
+ if(ps.length){const{data:su}=await db.storage.from('meal-photos').createSignedUrls(ps,3600);(su||[]).forEach(x=>{if(x.signedUrl)S.urls[x.path]=x.signedUrl})}
+ const ap=Object.values(S.pr).map(p=>p.avatar_path).filter(Boolean);S.av={};
+ if(ap.length){const{data:au}=await db.storage.from('avatars').createSignedUrls(ap,3600);(au||[]).forEach(x=>{if(x.signedUrl)S.av[x.path]=x.signedUrl})}
+ render()}
+
+/* ---------- Ekranlar ---------- */
+function dayBar(){
+ const today=new Date().toDateString()===S.day.toDateString();
+ const t=today?'Bugün':S.day.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+ return`<div class="days"><button data-act="prev" aria-label="Önceki gün">‹</button><h1>${t}</h1><button data-act="next" aria-label="Sonraki gün" ${today?'disabled style="opacity:.25"':''}>›</button></div>`}
+
+function todayView(){
+ const sum=k=>Math.round(S.meals.reduce((s,m)=>s+(+m[k]||0),0));
+ const eaten=sum('kcal'),goal=S.p.daily_goal,left=goal-eaten,over=left<0,C=2*Math.PI*54;
+ const list=mealList();
+ return`${dayBar()}${streakLine()}${remindView()}${pendView()}<div class="card"><div class="ring">
+ <svg width="124" height="124" viewBox="0 0 124 124"><circle cx="62" cy="62" r="54" fill="none" style="stroke:var(--soft)" stroke-width="12"/><circle cx="62" cy="62" r="54" fill="none" stroke="${over?'var(--over)':'var(--acc)'}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-Math.min(eaten/goal,1))}"/></svg>
+ <div><div class="big" style="color:${over?'var(--over)':'inherit'}">${Math.abs(left)}</div><div class="mute">${over?'kcal hedefin üstünde':'kcal kaldı'}</div><small>${eaten} / ${goal} kcal yendi</small></div></div>
+ <div class="macros"><div class="k-p"><b>${sum('protein')} g</b><small>protein${tg('p')}</small></div><div class="k-c"><b>${sum('carbs')} g</b><small>karbonhidrat${tg('c')}</small></div><div class="k-f"><b>${sum('fat')} g</b><small>yağ${tg('f')}</small></div></div></div>
+ <h2>Öğünler</h2><div class="card" style="padding:4px 16px">${list}</div>${adviceView()}
+ `}
+
+const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)*47%360;
+function avatar(id,sz=44){const p=id===S.me.id?S.p:(S.pr[id]||{}),u=p.avatar_path&&S.av[p.avatar_path],n=p.username||S.names[id]||'?';
+ return u?`<img class="av" style="width:${sz}px;height:${sz}px" src="${u}" alt="">`:`<span class="av" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.42)}px;background:hsl(${hue(n)} 42% 36%)">${esc(n[0].toLocaleUpperCase('tr'))}</span>`}
+const seen=id=>{try{return localStorage.getItem('seen_'+id)||''}catch{return''}};
+function markSeen(id){const ms=S.feed.filter(m=>m.user_id===id);if(!ms.length)return;try{localStorage.setItem('seen_'+id,ms.map(m=>m.eaten_at).sort().pop())}catch{}}
+function friendsView(){
+ if(S.view?.friend)return friendPage(S.view.friend);
+ if(S.fsub==='feed')return fseg()+feedView();
+ const me=S.me.id,inc=S.fr.filter(x=>x.status==='pending'&&x.addressee===me),out=S.fr.filter(x=>x.status==='pending'&&x.requester===me),acc=S.fr.filter(x=>x.status==='accepted');
+ const other=x=>x.requester===me?x.addressee:x.requester,today=new Date().toDateString()===S.day.toDateString();
+ const by={};S.feed.forEach(m=>(by[m.user_id]??=[]).push(m));
+ const row=x=>{const id=other(x),ms=by[id]||[],s=seen(id),nw=today?ms.filter(m=>!s||new Date(m.eaten_at)>new Date(s)).length:0,tot=ms.reduce((a,m)=>a+m.kcal,0);
+  const sub=nw?`<span class="newb">${nw} yeni öğün</span>`:ms.length?`${ms.length} öğün, ${tot} kcal`:'Öğün yok';
+  const ph=ms.filter(m=>S.urls[m.photo_path]).slice(0,3).map(m=>`<img class="thumb" style="width:34px;height:34px;border-radius:8px" src="${S.urls[m.photo_path]}" alt="">`).join('');
+  return`<button class="frow" data-act="friend" data-id="${id}">${avatar(id,48)}<span style="flex:1;min-width:0"><b>${esc(S.names[id]||'?')}</b>${(S.st?.[id]||0)>=2?`<small class="newb"> ${S.st[id]} gün seri</small>`:''}<small style="display:block">${sub}</small></span><span class="row" style="gap:4px">${ph}</span><span class="mute">›</span></button>`};
+ return`${fseg()}${dayBar()}
+ <form data-form="friend" class="row" style="align-items:flex-end"><div style="flex:1"><label>Kullanıcı adıyla arkadaş ekle</label><input type="text" name="u" required autocapitalize="none" style="margin-bottom:0"></div><button class="btn sm" style="height:50px">İstek gönder</button></form>
+ ${inc.length?`<h2>Gelen istekler</h2>${inc.map(x=>`<div class="card row sp" style="margin-bottom:8px"><span class="row">${avatar(x.requester,36)}<b>${esc(S.names[x.requester])}</b></span><span class="row"><button class="btn sm" data-act="accept" data-id="${x.id}">Kabul et</button><button class="btn sm ghost" data-act="unfriend" data-id="${x.id}">Reddet</button></span></div>`).join('')}`:''}
+ ${out.length?`<h2>Gönderilen istekler</h2>${out.map(x=>`<div class="card row sp" style="margin-bottom:8px"><span>${esc(S.names[x.addressee])}</span><small>yanıt bekliyor</small></div>`).join('')}`:''}
+ <h2>Arkadaşlar</h2>${acc.length?acc.map(row).join(''):'<div class="empty">Henüz arkadaşın yok. Yukarıdan kullanıcı adıyla ekle.</div>'}`}
+function friendPage(id){
+ const x=S.fr.find(f=>f.status==='accepted'&&(f.requester===id||f.addressee===id)),ms=S.feed.filter(m=>m.user_id===id),tot=ms.reduce((a,m)=>a+m.kcal,0),g=S.pr[id]?.daily_goal;
+ return`<button class="link" style="text-align:left;margin:0 0 8px" data-act="fback">‹ Arkadaşlar</button>
+ <div class="row" style="gap:14px">${avatar(id,64)}<div><h1>${esc(S.names[id]||'')}</h1><small>${tot} kcal${g?` / ${g} hedef`:''}</small></div></div>${dayBar()}
+ ${ms.length?`<div class="card" style="padding:4px 16px"><ul>${ms.map(m=>`<li class="m tap" data-act="detail" data-id="${m.id}">${th(m)}<div><b>${esc(m.name)}</b><small>${hm(m.eaten_at)}</small></div><span class="k">${m.kcal}</span><span class="mute">›</span></li>`).join('')}</ul></div>`:'<div class="empty">Bu gün paylaşılan öğün yok.</div>'}
+ <button class="link" style="color:var(--mute);font-weight:500" data-act="unfriend" data-id="${x?.id}">Arkadaşlıktan çıkar</button>`}
+function detailView(){
+ const m=S.detail,own=m.user_id===S.me.id,u=S.urls[m.photo_path],it=Array.isArray(m.items)?m.items:[];
+ return`<div class="ov" data-act="dclose"><div class="sheet" data-stop><div class="row sp"><div><h1 style="font-size:22px">${esc(m.name)}</h1><small>${own?'':esc(S.names[m.user_id]||'')+', '}${new Date(m.eaten_at).toLocaleString('tr-TR',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</small></div><button class="x" data-act="dclose" aria-label="Kapat">×</button></div>
+ ${u?`<img class="hero" src="${u}" alt="Yemek fotoğrafı" data-act="zoom" data-id="${m.id}"><small class="mute">Büyütmek için fotoğrafa dokun. Fotoğraflar 60 gün sonra uygulamadan silinir.</small>${S.pb?.id===m.id?`<button class="btn ghost sm" style="display:block;margin-top:8px" data-act="dphone">Telefona kaydet</button>`:''}`:''}
+ <div class="card" style="margin-top:10px"><div class="big">${m.kcal}<small> kcal</small></div><div class="macros"><div class="k-p"><b>${+m.protein||0} g</b><small>protein</small></div><div class="k-c"><b>${+m.carbs||0} g</b><small>karbonhidrat</small></div><div class="k-f"><b>${+m.fat||0} g</b><small>yağ</small></div></div></div>
+ ${m.ai_items?`<small class="mute" style="display:block;margin-top:8px">Yapay zekanın ilk tahmini: ${Math.round(totOf(m.ai_items).kcal)} kcal${m.edited_at?' (sonra düzenlendi)':''}</small>`:''}${it.length?`<h2>İçindekiler</h2><div class="card" style="padding:4px 16px">${it.map(x=>`<div class="it"><div><b>${esc(x.name)}</b><small>${Math.round(x.grams)} g, ${mm(x)}</small></div><span class="k">${Math.round(x.grams*x.kcal_per_100g/100)} kcal</span></div>`).join('')}</div>`:''}
+ ${rxView(m)}${own?`<div class="row" style="margin-top:12px"><button class="btn sm" data-act="edit">Düzenle</button><button class="btn ghost sm" style="color:var(--over);border-color:var(--over)" data-act="del" data-id="${m.id}">Sil</button></div>`:`<button class="btn" style="margin-top:12px" data-act="copyme">Aynısını ben de yedim${m.photo_path?' (fotoğrafıyla)':''}</button>`}</div></div>`}
+const zoomView=()=>`<div class="zoom" data-act="zclose"><button class="x" style="position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:10px;color:#fff;font-size:36px" data-act="zclose" aria-label="Kapat">×</button><img src="${S.zoom}" alt=""></div>`;
+const calcGoal=b=>calcPlan(b).kcal;
+function profileView(){
+ const b=S.body||{},sel=(n,o,v)=>`<select name="${n}">${o.map(([k,t])=>`<option value="${k}" ${v===k?'selected':''}>${t}</option>`).join('')}</select>`;
+ return`<h1 style="margin:6px 0 14px">Profil</h1>
+ <div class="card"><div class="row" style="gap:14px">${avatar(S.me.id,64)}<div style="flex:1"><b>${esc(S.p.username)}</b><small style="display:block">${esc(S.me.email)}</small></div></div>
+ <label class="btn ghost sm" style="margin-top:12px;display:inline-block">Fotoğrafı değiştir<input type="file" accept="image/*" data-av hidden></label></div>
+ <h2>Günlük hedefin</h2>${planView()}
+ <h2>Bilgilerin</h2><div class="card"><form data-form="body"><label>Cinsiyet</label>${sel('sex',[['f','Kadın'],['m','Erkek']],b.sex)}
+ <div class="g3"><div><label>Doğum yılı</label><input type="number" name="by" required min="1930" max="2008" inputmode="numeric" value="${b.birth_year||''}"></div><div><label>Boy (cm)</label><input type="number" name="h" required min="120" max="230" inputmode="numeric" value="${b.height_cm||''}"></div><div><label>Kilo (kg)</label><input type="number" name="w" required min="30" max="300" step="any" inputmode="decimal" value="${b.weight_kg||''}"></div></div>
+ <label>Haftada kaç gün spor yapıyorsun?</label>${sel('wk',[0,1,2,3,4,5,6,7].map(n=>[String(n),n===0?'Hiç':n===7?'Her gün':n+' gün']),String(b.workouts??({sedentary:0,light:2,moderate:4,high:6}[b.activity]??2)))}
+ <label>Ağırlık antrenmanı yapıyor musun?</label>${sel('lifts',[['1','Evet (salon, dambıl, direnç)'],['0','Hayır']],b.lifts?'1':'0')}
+ <label>Amacın</label>${sel('goal',[['lose','Kilo vermek'],['maintain','Kiloyu korumak'],['muscle','Kas kazanmak (yağlanmadan)'],['gain','Kilo almak']],b.goal||'maintain')}
+ <button class="btn">Hesapla ve kaydet</button></form></div>
+ <h2>Telefon bildirimleri</h2><small class="mute">Arkadaşın öğün eklediğinde, not ya da tepki bıraktığında uygulama kapalıyken de haber alırsın. Uygulamanın ana ekrana eklenmiş olması gerekir.</small><div class="row" style="margin:8px 0"><button class="btn sm" data-act="pushon">Aç</button><button class="btn ghost sm" data-act="pushoff">Kapat</button><button class="btn ghost sm" data-act="pushtest">Test et</button></div>
+ ${npView()}<h2>Görünüm</h2><div class="seg">${[['auto','Otomatik'],['light','Açık'],['dark','Koyu']].map(([k,t])=>`<button class="${(localStorage.getItem('theme')||'auto')===k?'on':''}" data-act="theme" data-id="${k}">${t}</button>`).join('')}</div>
+ <label class="chk"><input type="checkbox" data-rem ${localStorage.getItem('rem_off')==='1'?'':'checked'}> Hatırlatıcıları göster (öğün eklemediysen, pazar günü haftalık özet)</label>
+ <h2>Hesap</h2><button class="btn ghost" data-act="csv">Tüm öğünleri CSV olarak indir</button><button class="link" style="color:var(--over)" data-act="logout">Çıkış yap</button><button class="link" style="color:var(--over);font-weight:500" data-act="delacc">Hesabımı ve verilerimi sil</button><small class="mute" style="display:block;text-align:center;margin-top:18px">Sürüm ${VER}</small>`}
+async function loadReport(){
+ const a=new Date();a.setHours(0,0,0,0);a.setDate(a.getDate()-29);
+ const{data}=await db.from('meals').select('kcal,protein,carbs,fat,eaten_at').eq('user_id',S.me.id).gte('eaten_at',a.toISOString());
+ const{data:wt}=await db.from('weights').select('day,kg').order('day',{ascending:false}).limit(60);S.wt=wt||[];
+ const ds=Array.from({length:30},(_,i)=>{const d=new Date(a);d.setDate(a.getDate()+i);return{d,kcal:0,p:0,c:0,f:0,n:0}});
+ (data||[]).forEach(m=>{const t=new Date(m.eaten_at);t.setHours(0,0,0,0);const x=ds[Math.round((t-a)/864e5)];if(x){x.kcal+=m.kcal;x.p+=+m.protein||0;x.c+=+m.carbs||0;x.f+=+m.fat||0;x.n++}});
+ S.rep=ds;render()}
+function reportView(){
+ const r=S.rt,g=S.p.daily_goal,ds=S.rep;let b='<div class="empty">Yükleniyor...</div>';
+ if(ds&&r==='weight')b=weightView();
+ else if(ds&&r==='day'){const x=ds[29],pk=x.p*4,ck=x.c*4,fk=x.f*9,t=pk+ck+fk||1,pc=v=>Math.round(v/t*100);
+  b=`<div class="card"><div class="big">${x.kcal}<small> / ${g} kcal</small></div><small>${x.n} öğün</small><div class="mbar"><i style="width:${pk/t*100}%;background:var(--cp)"></i><i style="width:${ck/t*100}%;background:var(--cc)"></i><i style="width:${fk/t*100}%;background:var(--cf)"></i></div>
+  <div class="macros"><div class="k-p"><b>${Math.round(x.p)} g</b><small>protein %${pc(pk)}</small></div><div class="k-c"><b>${Math.round(x.c)} g</b><small>karb. %${pc(ck)}</small></div><div class="k-f"><b>${Math.round(x.f)} g</b><small>yağ %${pc(fk)}</small></div></div></div>`}
+ else if(ds){const n=r==='week'?7:30,d=ds.slice(-n),lg=d.filter(x=>x.n),am=k=>lg.length?Math.round(lg.reduce((a,x)=>a+x[k],0)/lg.length):0,mx=Math.max(g*1.3,...d.map(x=>x.kcal));
+  b=`<div class="card"><div class="bars">${d.map(x=>`<i class="${x.kcal>g*1.05?'over':''}" style="height:${x.kcal/mx*100}%"></i>`).join('')}<div class="gl" style="bottom:${g/mx*100}%"></div></div>${r==='week'?`<div class="bl">${d.map(x=>`<span>${x.d.toLocaleDateString('tr-TR',{weekday:'narrow'})}</span>`).join('')}</div>`:''}<small style="display:block;margin-top:8px">Kesikli çizgi hedefin (${g} kcal). Turuncu çubuk hedefi aşan gün.</small></div>
+  <div class="card" style="margin-top:10px"><div class="macros"><div><b>${am('kcal')}</b><small>ort. kcal/gün</small></div><div><b>${lg.filter(x=>x.kcal<=g*1.05).length}/${lg.length}</b><small>hedefi aşmayan gün</small></div></div>
+  <div class="macros"><div class="k-p"><b>${am('p')} g</b><small>ort. protein</small></div><div class="k-c"><b>${am('c')} g</b><small>ort. karb.</small></div><div class="k-f"><b>${am('f')} g</b><small>ort. yağ</small></div></div></div>`}
+ if(r==='week'&&ds)b+=weekCard();
+ return`<h1 style="margin:6px 0 14px">Rapor</h1><div class="seg">${[['day','Günlük'],['week','Haftalık'],['month','Aylık'],['weight','Kilo']].map(([k,t])=>`<button class="${r===k?'on':''}" data-act="rtab" data-id="${k}">${t}</button>`).join('')}</div>${b}`}
+app.addEventListener('change',async e=>{
+ if(!e.target.matches('[data-av]'))return;const f=e.target.files[0];if(!f)return;
+ try{const ph=await shrink(f,320),old=S.p.avatar_path,path=`${S.me.id}/a${Date.now()}.jpg`;
+  const u=await db.storage.from('avatars').upload(path,ph.blob,{contentType:'image/jpeg'});if(u.error)throw u.error;
+  await db.from('profiles').update({avatar_path:path}).eq('id',S.me.id);S.p.avatar_path=path;
+  if(old)db.storage.from('avatars').remove([old]);load()}catch{toast('Fotoğraf yüklenemedi.')}});
+function sheetView(){
+ const q=(S.q||'').trim();
+ return`<div class="ov" data-act="close"><div class="sheet" data-stop><div class="row sp"><h1 style="font-size:22px">Öğün ekle</h1><button class="x" data-act="close" aria-label="Kapat">×</button></div>
+ <div class="sbox">${IC.search}<input type="search" data-q placeholder="Yemek ara" autocomplete="off" value="${esc(S.q||'')}"><button class="bcb" data-act="scan" aria-label="Barkod okut">${IC.bc}</button></div>
+ <div id="qres">${qresHtml()}</div>
+ <div id="qdef" style="${q?'display:none':''}"><div class="pick"><label class="btn">Fotoğraf çek<input type="file" accept="image/*" capture="environment" data-pick hidden></label><label class="btn ghost">Galeriden seç<input type="file" accept="image/*" data-pick hidden></label></div>${freqChips()}<small class="mute">Ya da elle gir:</small>
+ <form data-form="meal" style="margin-top:12px"><label>Ne yedin?</label><input type="text" name="name" required maxlength="80" placeholder="Örn. Mercimek çorbası"><label>Öğün</label>${typeSel(defType())}<label>Kalori (kcal)</label><input type="number" name="kcal" required min="0" max="5000" inputmode="numeric">
+ <div class="g3"><div><label>Protein g</label><input type="number" name="protein" min="0" step="any" inputmode="decimal"></div><div><label>Karb. g</label><input type="number" name="carbs" min="0" step="any" inputmode="decimal"></div><div><label>Yağ g</label><input type="number" name="fat" min="0" step="any" inputmode="decimal"></div></div>
+ <label class="chk"><input type="checkbox" name="shared" checked> Arkadaşlarım görebilsin</label><button class="btn">Kaydet</button></form></div></div></div>`}
+function render(){
+ const v=S.tab==='today'?todayView():S.tab==='friends'?friendsView():S.tab==='report'?reportView():S.tab==='notif'?notifView():profileView();
+ const pend=S.fr.filter(x=>x.status==='pending'&&x.addressee===S.me.id).length;
+ app.innerHTML=appbar()+offBanner()+v+navHtml(pend)+(S.sheet?sheetView():'')+(S.ai?aiView():'')+(S.detail?detailView():'')+(S.zoom?zoomView():'')+(S.bc?bcView():'')+(S.saved?savedBarView():'')+(S.ed?editView():'')+(S.story?storyView():'')}
+
+/* ---------- Olaylar ---------- */
+const shift=n=>{S.day=new Date(S.day);S.day.setDate(S.day.getDate()+n);load()};
+app.addEventListener('click',async e=>{
+ if(e.target.closest('[data-stop]')&&!e.target.closest('[data-act]'))return;
+ const el=e.target.closest('[data-act]');if(!el)return;
+ if(el.classList.contains('ov')&&e.target!==el)return;
+ const a=el.dataset.act,id=el.dataset.id;
+ if(a==='mode'){S.mode=S.mode==='login'?'register':'login';authView()}
+ else if(a==='tab'){S.tab=id;S.view=null;if(id==='report')return loadReport();render()}
+ else if(a==='prev')shift(-1);else if(a==='next')shift(1);
+ else if(a==='add'){S.sheet=true;S.q='';S.qr=null;render();loadFreq()}
+ else if(a==='bell'){S.tab='notif';S.view=null;render()}
+ else if(a==='qmy')addCopy(S.qr.my[+id]);
+ else if(a==='qai')aiText();
+ else if(a==='qoff'){const x=S.qr.off[+id];S.sheet=false;S.ai={photos:[],note:'',barcode:true,res:{name:x.name,confidence:'exact',source:'Open Food Facts',questions:['Gramı yediğin miktara göre düzelt.'],items:[{...x}]}};render()}else if(a==='close'){S.sheet=false;render()}
+ else if(a==='del'&&id.startsWith('tmp_')){cset('q',Q().filter(x=>x.id!==id));S.stT=0;load()}
+ else if(a==='del'){if(confirm('Bu öğün silinsin mi?')){const pm=S.meals.find(x=>x.id===id);const r=await db.from('meals').delete().eq('id',id);if(!r.error&&pm?.photo_path)db.storage.from('meal-photos').remove([pm.photo_path]);if(r.error)toast(trErr(r.error.message));S.detail=null;S.stT=0;load()}}
+ else if(a==='accept'){await db.from('friendships').update({status:'accepted'}).eq('id',id);toast('Arkadaş eklendi.');load()}
+ else if(a==='unfriend'){if(confirm('Bu arkadaşlık/istek kaldırılsın mı?')){await db.from('friendships').delete().eq('id',id);S.view=null;load()}}
+ else if(a==='detail'){if(id.startsWith('tmp_'))return toast('Bu öğün henüz gönderilmedi, bağlantı gelince gönderilecek.');S.detail=[...S.meals,...S.feed,...(S.ff||[])].find(x=>x.id===id);S.rx=null;S.pb=null;render();loadRx(id);prefetchPhoto(S.detail)}
+ else if(a==='dclose'){S.detail=null;render()}
+ else if(a==='zoom'){S.zoom=S.urls[S.detail.photo_path];render()}
+ else if(a==='zclose'){S.zoom=null;render()}
+ else if(a==='friend'){S.view={friend:id};markSeen(id);render()}
+ else if(a==='fback'){S.view=null;render()}
+ else if(a==='rtab'){S.rt=id;render()}
+ else if(a==='freq')addCopy(S.freq[+id]);
+ else if(a==='scan'){S.sheet=false;S.bc={};render();startScan()}
+ else if(a==='bcclose'){await stopScan();S.bc=null;render()}
+ else if(a==='rx'){const l=S.rx?.list||[],mine=l.find(x=>x.user_id===S.me.id),q=db.from('reactions');
+  const r=mine?.emoji===id?await q.delete().eq('meal_id',S.detail.id).eq('user_id',S.me.id):await q.upsert({meal_id:S.detail.id,user_id:S.me.id,emoji:id},{onConflict:'meal_id,user_id'});
+  if(r.error)toast(trErr(r.error.message));loadRx(S.detail.id)}
+ else if(a==='advice')askDay();
+ else if(a==='wdel'){await db.from('weights').delete().eq('user_id',S.me.id).eq('day',id);loadReport()}
+ else if(a==='tophone'){toPhone(S.saved.f)}
+ else if(a==='sclose'){S.saved=null;render()}
+ else if(a==='dphone'){toPhone(S.pb.b)}
+ else if(a==='cdel'){await db.from('comments').delete().eq('id',id);loadRx(S.detail.id)}
+ else if(a==='wkopen'){S.tab='report';S.rt='week';loadReport()}
+ else if(a==='weekai')askWeek();
+ else if(a==='theme'){try{id==='auto'?localStorage.removeItem('theme'):localStorage.setItem('theme',id)}catch{}applyTheme();render()}
+ else if(a==='delacc'){
+  if((prompt('Hesabın ve tüm verilerin kalıcı olarak silinecek. Onaylamak için SİL yaz.')||'').trim().toLocaleUpperCase('tr-TR')!=='SİL')return;
+  toast('Siliniyor...');
+  for(const b of['meal-photos','avatars']){const{data}=await db.storage.from(b).list(S.me.id,{limit:1000});if(data?.length)await db.storage.from(b).remove(data.map(x=>`${S.me.id}/${x.name}`))}
+  const r=await db.rpc('delete_my_account');if(r.error)return toast('Silinemedi: '+r.error.message);
+  await db.auth.signOut();S.me=null;authView();toast('Hesabın silindi.')}
+ else if(a==='edit'){const m=S.detail,d=new Date(m.eaten_at);
+  S.ed={id:m.id,name:m.name,mt:m.meal_type||defType(),shared:m.shared,time:d.toTimeString().slice(0,5),kcal:m.kcal,protein:m.protein,carbs:m.carbs,fat:m.fat,day:m.eaten_at,items:Array.isArray(m.items)&&m.items.length?JSON.parse(JSON.stringify(m.items)):null};
+  S.detail=null;render()}
+ else if(a==='edclose'){S.ed=null;render()}
+ else if(a==='edel'){readEd();S.ed.items.splice(+id,1);render()}
+ else if(a==='edadd'){readEd();S.ed.items.push({...PRE[+id]});render()}
+ else if(a==='aifix'){keepName();const it=S.ai.res.items,n=askName(it[+id]);if(n&&n!==it[+id].name)renameItem(it,+id,n,render)}
+ else if(a==='aialt'){keepName();const[i,k]=id.split(':').map(Number),it=S.ai.res.items;renameItem(it,i,it[i].alt[k],render)}
+ else if(a==='edfix'){readEd();const it=S.ed.items,n=askName(it[+id]);if(n&&n!==it[+id].name)renameItem(it,+id,n,render)}
+ else if(a==='edalt'){readEd();const[i,k]=id.split(':').map(Number),it=S.ed.items;renameItem(it,i,it[i].alt[k],render)}
+ else if(a==='airetry'){keepName();S.ai.res=null;S.ai.orig=null;render()}
+ else if(a==='copyme'){const m=S.detail;let path=null;
+  if(m.photo_path&&navigator.onLine){toast('Kopyalanıyor...');
+   try{const b=S.pb?.id===m.id?S.pb.b:await(await fetch(S.urls[m.photo_path])).blob();
+    path=`${S.me.id}/${crypto.randomUUID()}.jpg`;
+    const u=await db.storage.from('meal-photos').upload(path,b,{contentType:'image/jpeg'});
+    if(u.error)throw u.error}catch{path=null;toast('Fotoğraf kopyalanamadı, öğün fotoğrafsız eklendi.')}}
+  addCopy({...m,photo_path:path})}
+ else if(a==='story'){const by=storiesOf();S.story={uid:id,i:0,ids:storyIds(by)};sdone(id,by[id][0].eaten_at);render();stTick()}
+ else if(a==='stap')stGo(e.clientX<innerWidth/3?-1:1);
+ else if(a==='stclose'){S.story=null;clearTimeout(S.stTm);render()}
+ else if(a==='qrx'){const[mid,em]=id.split(':');const r=await db.from('reactions').upsert({meal_id:mid,user_id:S.me.id,emoji:em},{onConflict:'meal_id,user_id'});
+  if(r.error)toast(trErr(r.error.message));else{(S.myrx??={})[mid]=em;render()}}
+ else if(a==='plater')pendAddFromAi();
+ else if(a==='pan')analyzePend(id);
+ else if(a==='pall'){(async()=>{for(const x of (S.pend||[]).filter(x=>x.status!=='ready'))await analyzePend(x.id)})()}
+ else if(a==='pctl')openPend(id);
+ else if(a==='pdel'){if(confirm('Bu bekleyen fotoğraf silinsin mi?')){await pendDel(id);await loadPend();render()}}
+ else if(a==='fsub'){S.fsub=id;S.view=null;load()}
+ else if(a==='ntopen')ntopen(id);
+ else if(a==='ntall'){await db.from('notifications').update({read:true}).eq('user_id',S.me.id).eq('read',false);load()}
+ else if(a==='pushon')pushOn();
+ else if(a==='pushoff')pushOff();
+ else if(a==='pushtest')pushTest();
+ else if(a==='aiclose'){S.ai=null;render()}
+ else if(a==='analyze')analyze();
+ else if(a==='aidel'){S.ai.res.items.splice(+id,1);render()}
+ else if(a==='aiadd'){S.ai.res.items.push({...PRE[+id]});render()}
+ else if(a==='aisave')saveAI();
+ else if(a==='logout'){await db.auth.signOut();S.me=null;authView()}
+ else if(a==='csv'){
+  const{data}=await db.from('meals').select('eaten_at,name,kcal,protein,carbs,fat').eq('user_id',S.me.id).order('eaten_at');
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const csv='tarih,ogun,kcal,protein,karb,yag\n'+(data||[]).map(r=>[r.eaten_at,r.name,r.kcal,r.protein,r.carbs,r.fat].map(q).join(',')).join('\n');
+  const f=new File([csv],'kalori.csv',{type:'text/csv'});
+  if(navigator.canShare?.({files:[f]}))navigator.share({files:[f]}).catch(()=>{});
+  else{const u=URL.createObjectURL(f),l=document.createElement('a');l.href=u;l.download='kalori.csv';l.click()}}
+});
+app.addEventListener('submit',async e=>{
+ e.preventDefault();const f=new FormData(e.target),k=e.target.dataset.form;
+ if(k==='auth')return submitAuth(f);
+ if(k==='meal'){
+  const d=new Date(S.day),n=new Date();d.setHours(n.getHours(),n.getMinutes());
+  const num=x=>f.get(x)===''?null:+f.get(x);
+  const r=await saveMeal({name:f.get('name').trim(),kcal:Math.round(+f.get('kcal')),protein:num('protein'),carbs:num('carbs'),fat:num('fat'),eaten_at:d.toISOString(),shared:f.get('shared')==='on',meal_type:f.get('mt')});
+  if(r.error)return toast(trErr(r.error.message));
+  S.sheet=false;S.stT=0;load()}
+ if(k==='friend'){
+  const u=fold(f.get('u'));
+  let{data:p,error:pe}=await db.from('profiles').select('id').eq('username_fold',u).maybeSingle();if(pe)({data:p}=await db.from('profiles').select('id').eq('username',u).maybeSingle());
+  if(!p)return toast('Bu kullanıcı adı bulunamadı.');
+  if(p.id===S.me.id)return toast('Kendini ekleyemezsin.');
+  const r=await db.from('friendships').insert({addressee:p.id});
+  if(r.error)return toast(trErr(r.error.message));
+  toast('İstek gönderildi.');load()}
+ if(k==='edit'){const e=S.ed,row={name:f.get('name').trim(),meal_type:f.get('mt'),shared:f.get('shared')==='on',edited_at:new Date().toISOString()};
+  const d=new Date(e.day),[h,mi]=f.get('tm').split(':');d.setHours(+h,+mi);row.eaten_at=d.toISOString();
+  if(e.items){const it=e.items.filter(x=>x.grams>0),t=totOf(it);Object.assign(row,{items:it,kcal:Math.round(t.kcal),protein:Math.round(t.p),carbs:Math.round(t.c),fat:Math.round(t.f)})}
+  else{const n=x=>f.get(x)===''?null:+f.get(x);Object.assign(row,{kcal:Math.round(+f.get('kcal')),protein:n('protein'),carbs:n('carbs'),fat:n('fat')})}
+  const r=await db.from('meals').update(row).eq('id',e.id);
+  if(r.error)return toast(trErr(r.error.message));
+  S.ed=null;S.stT=0;toast('Öğün güncellendi.');return load()}
+ if(k==='note'){const t=(f.get('t')||'').trim();if(!t)return;const r=await db.from('comments').insert({meal_id:S.detail.id,body:t.slice(0,200)});if(r.error)return toast(trErr(r.error.message));loadRx(S.detail.id);return}
+ if(k==='bc'){const c=(f.get('code')||'').trim();if(!c)return;await stopScan();return lookup(c)}
+ if(k==='weight'){const kg=+f.get('kg'),r=await db.from('weights').upsert({user_id:S.me.id,day:dkey(new Date()),kg},{onConflict:'user_id,day'});
+  if(r.error)return toast(trErr(r.error.message));
+  let msg='Kilo kaydedildi.';
+  if(S.body?.sex&&S.body.birth_year&&S.body.height_cm){S.body={...S.body,weight_kg:kg};const g=calcGoal(S.body);
+   await db.from('body_info').upsert({...S.body,id:S.me.id});
+   if(g!==S.p.daily_goal){await db.from('profiles').update({daily_goal:g}).eq('id',S.me.id);S.p.daily_goal=g;msg+=' Yeni hedefin '+g+' kcal.'}}
+  toast(msg);return loadReport()}
+ if(k==='body'){
+  const b={sex:f.get('sex'),birth_year:+f.get('by'),height_cm:+f.get('h'),weight_kg:+f.get('w'),workouts:+f.get('wk'),lifts:f.get('lifts')==='1',goal:f.get('goal')};
+  if(new Date().getFullYear()-b.birth_year<18)return toast('Bu hesaplama 18 yaş ve üzeri içindir.');
+  const g=calcGoal(b),r1=await db.from('body_info').upsert({id:S.me.id,...b});if(r1.error)return toast(trErr(r1.error.message));
+  const r2=await db.from('profiles').update({daily_goal:g}).eq('id',S.me.id);if(r2.error)return toast(trErr(r2.error.message));
+  S.body=b;S.p.daily_goal=g;toast('Günlük hedefin '+g+' kcal.');render()}
+ if(k==='goal'){
+  const g=Math.round(+f.get('g'));
+  const r=await db.from('profiles').update({daily_goal:g}).eq('id',S.me.id);
+  if(r.error)return toast(trErr(r.error.message));
+  S.p.daily_goal=g;toast('Hedef kaydedildi.');render()}
+});
+/* ---------- Fotoğraftan analiz ---------- */
+const th=m=>S.urls[m.photo_path]?`<img class="thumb" src="${S.urls[m.photo_path]}" alt="">`:'';
+const FJ={exact:.05,high:.15,medium:.25,low:.35};
+const PRE=[{name:'Zeytinyağı 1 yk',grams:14,kcal_per_100g:884,protein_per_100g:0,carbs_per_100g:0,fat_per_100g:100},{name:'Ekmek 1 dilim',grams:30,kcal_per_100g:265,protein_per_100g:9,carbs_per_100g:49,fat_per_100g:3},{name:'Sos/mayonez 1 yk',grams:15,kcal_per_100g:680,protein_per_100g:1,carbs_per_100g:1,fat_per_100g:75}];
+async function shrink(f,mx=1024){
+ const bm=await createImageBitmap(f,{imageOrientation:'from-image'});
+ const k=Math.min(1,mx/Math.max(bm.width,bm.height));
+ const c=document.createElement('canvas');c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
+ c.getContext('2d').drawImage(bm,0,0,c.width,c.height);
+ const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.7));
+ const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(blob)});
+ return{blob,b64,orig:f,url:URL.createObjectURL(blob)}}
+const VER='v21';
+const mm=x=>{const f=v=>Math.round(x.grams*(+v||0)/100);return dt('cp')+'protein '+f(x.protein_per_100g)+' g '+dt('cc')+'karb. '+f(x.carbs_per_100g)+' g '+dt('cf')+'yağ '+f(x.fat_per_100g)+' g'};
+const im=x=>Math.round(x.grams*(+x.kcal_per_100g||0)/100)+' kcal, '+mm(x);
+function tot(){const it=S.ai.res.items,s=k=>it.reduce((a,x)=>a+x.grams*(+x[k]||0)/100,0);return{kcal:s('kcal_per_100g'),p:s('protein_per_100g'),c:s('carbs_per_100g'),f:s('fat_per_100g')}}
+function recalc(){const t=tot(),f=FJ[S.ai.res.confidence]??.25;
+ S.ai.res.items.forEach((x,i)=>{const e=document.getElementById('k'+i);if(e)e.innerHTML=im(x)});
+ document.getElementById('tk').textContent=Math.round(t.kcal);
+ document.getElementById('tp').textContent=Math.round(t.p)+' g';document.getElementById('tc').textContent=Math.round(t.c)+' g';document.getElementById('tf').textContent=Math.round(t.f)+' g';
+ document.getElementById('tr').textContent=Math.round(t.kcal*(1-f))+' - '+Math.round(t.kcal*(1+f))+' kcal arası'}
+function aiView(){
+ const a=S.ai,r=a.res;let b=`<div class="row" style="flex-wrap:wrap;margin-top:12px">${a.photos.map(p=>`<img class="thumb" style="width:72px;height:72px" src="${p.url}" alt="">`).join('')}${!r&&a.photos.length<2?`<label class="btn ghost sm">+ Başka açı<input type="file" accept="image/*" capture="environment" data-pick hidden></label>`:''}</div>`;
+ if(!r&&a.text)b+=`<div class="empty">“${esc(a.note)}” hesaplanıyor (10-20 sn)...</div>`;
+ else if(!r)b+=`<label style="display:block;margin-top:14px">Ek bilgi (isteğe bağlı)</label><input type="text" name="note" value="${esc(a.note)}" placeholder="Örn. yağda kızarmış, 2 dilim ekmek var" maxlength="150"><small class="mute">İpucu: Tabağın yanına çatal ya da elini koy; yukarıdan bir de yandan çek. Porsiyon daha doğru tahmin edilir.</small><button class="btn" style="margin-top:14px" data-act="analyze" ${a.busy?'disabled':''}>${a.busy?'Analiz ediliyor (10-20 sn)...':navigator.onLine?'Analiz et':'Fotoğrafı sakla, sonra analiz et'}</button>${navigator.onLine?`<button class="btn ghost" style="margin-top:8px" data-act="plater" ${a.busy?'disabled':''}>Sonra analiz et</button>`:''}`;
+ else if(!r.items?.length)b+=`<div class="empty">Yemek algılanamadı. Daha yakından ve aydınlıkta tekrar dene.</div><button class="btn ghost" data-act="aiclose">Kapat</button>`;
+ else{const t=tot(),f=FJ[r.confidence]??.25;
+  b+=`<h2 style="margin-top:14px">${esc(r.name||'Öğün')}</h2><div class="card"><div class="big" id="tk">${Math.round(t.kcal)}</div><small>kcal, <span id="tr">${Math.round(t.kcal*(1-f))} - ${Math.round(t.kcal*(1+f))} kcal arası</span> (güven: ${{exact:'kesin, etiket',high:'yüksek',medium:'orta',low:'düşük'}[r.confidence]||'orta'})</small><small class="mute" style="display:block">${r.source?'Kaynak: '+esc(r.source):'Model: '+esc(r.model||"?")}</small><div class="macros"><div class="k-p"><b id="tp">${Math.round(t.p)} g</b><small>protein</small></div><div class="k-c"><b id="tc">${Math.round(t.c)} g</b><small>karbonhidrat</small></div><div class="k-f"><b id="tf">${Math.round(t.f)} g</b><small>yağ</small></div></div></div>
+  ${a.photos.length?`<button class="btn ghost sm" style="margin-top:10px" data-act="airetry">Hepsi yanlış: ipucu vererek tekrar analiz et</button>`:''}<h2>Gramları düzelt</h2>${r.items.map((x,i)=>`<div class="it"><div><b>${esc(x.name)}</b><small id="k${i}">${im(x)}</small>${(x.alt||[]).length?`<small class="mute">Belki: ${x.alt.slice(0,2).map((n,k)=>`<button class="mini" data-act="aialt" data-id="${i}:${k}">${esc(n)}</button>`).join(' ')}</small>`:''}<button class="mini" data-act="aifix" data-id="${i}">Bu ne? Düzelt</button></div><div class="row"><input type="number" inputmode="decimal" data-g="${i}" value="${Math.round(x.grams)}" min="0" style="margin:0;width:78px" aria-label="gram"><button class="x" data-act="aidel" data-id="${i}" aria-label="Kaldır">×</button></div></div>`).join('')}
+  <small style="display:block;margin-top:10px">Eksik mi? Ekle:</small><div class="row" style="flex-wrap:wrap;margin:6px 0 12px">${PRE.map((p,i)=>`<button class="btn ghost sm" data-act="aiadd" data-id="${i}">${p.name}</button>`).join('')}</div>
+  ${r.questions?.length?`<div class="card" style="margin-bottom:12px"><b>Şunları kontrol et</b><ul>${r.questions.map(q=>`<li><small>${esc(q)}</small></li>`).join('')}</ul></div>`:''}
+  <label>Öğün adı</label><input type="text" name="mname" maxlength="80" value="${esc(r.name||'')}"><label>Öğün</label>${typeSel(defType())}<label class="chk"><input type="checkbox" name="sh" checked> Arkadaşlarım görebilsin</label><button class="btn" data-act="aisave">Kaydet</button>`}
+ return`<div class="ov"><div class="sheet"><div class="row sp"><h1 style="font-size:22px">${a.barcode?'Barkoddan ekle':a.text?'Yazıdan ekle':'Fotoğraftan ekle'}</h1><button class="x" data-act="aiclose" aria-label="Kapat">×</button></div>${b}</div></div>`}
+async function analyze(){
+ const a=S.ai;a.note=document.querySelector('[name=note]')?.value||'';if(!navigator.onLine)return pendAddFromAi();a.busy=true;render();
+ const call=db.functions.invoke('analyze-meal',{body:{images:a.photos.map(p=>p.b64),note:a.note}});
+ const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+ const{data,error}=await Promise.race([call,to]);
+ a.busy=false;
+ if(error||!data||data.error||!Array.isArray(data.items)){toast(data?.error||'Analiz yapılamadı. Bağlantını ve kurulumu kontrol et.');return render()}
+ data.items=data.items.map(x=>({...x,grams:Math.max(0,+x.grams||0),kcal_per_100g:+x.kcal_per_100g||0}));
+ a.orig=JSON.parse(JSON.stringify(data.items));a.res=data;render()}
+async function saveAI(){
+ const a=S.ai,r=a.res,it=r.items.filter(x=>x.grams>0),t=tot(),p=a.photos[0];
+ const sh=document.querySelector('[name=sh]').checked;
+ let path=p?`${S.me.id}/${crypto.randomUUID()}.jpg`:null;
+ const u=p?await db.storage.from('meal-photos').upload(path,p.blob,{contentType:'image/jpeg'}):{};
+ if(u.error){path=null;toast('Fotoğraf yüklenemedi, öğün fotoğrafsız kaydedildi.')}
+ const d=new Date(S.day),n=new Date();d.setHours(n.getHours(),n.getMinutes());const when=a.at?new Date(a.at):d;
+ const e=await db.from('meals').insert({name:((document.querySelector('[name=mname]')?.value||r.name)||it.map(x=>x.name).join(', ')).slice(0,80),kcal:Math.round(t.kcal),protein:Math.round(t.p),carbs:Math.round(t.c),fat:Math.round(t.f),eaten_at:when.toISOString(),shared:sh,photo_path:path,items:it,meal_type:document.querySelector('[name=mt]').value,ai_items:a.orig||null,ai_model:r.model||null});
+ if(e.error)return toast(trErr(e.error.message));
+ if(a.pendId){await pendDel(a.pendId);await loadPend()}S.ai=null;S.stT=0;toast('Öğün kaydedildi.');if(p){const sv={f:p.orig};S.saved=sv;setTimeout(()=>{if(S.saved===sv){S.saved=null;render()}},25000)}load()}
+app.addEventListener('change',async e=>{
+ if(!e.target.matches('[data-pick]'))return;const f=e.target.files[0];if(!f)return;
+ try{const ph=await shrink(f);S.ai??={photos:[],note:'',res:null};
+  const n=document.querySelector('[name=note]');if(n)S.ai.note=n.value;
+  S.ai.photos.push(ph);S.ai.res=null;S.sheet=false;render()}catch{toast('Fotoğraf okunamadı, tekrar dene.')}});
+app.addEventListener('input',e=>{const t=e.target;if(t.dataset.g!==undefined&&S.ai?.res){S.ai.res.items[+t.dataset.g].grams=Math.max(0,+t.value||0);recalc()}});
+/* ---------- v7: öğün türü, sık yediklerim, seri, tepki, barkod, kilo, gün değerlendirmesi ---------- */
+const TYPES={breakfast:'Kahvaltı',lunch:'Öğle',dinner:'Akşam',snack:'Atıştırmalık'};
+const defType=()=>{const h=new Date().getHours();return h>=4&&h<11?'breakfast':h<16&&h>=11?'lunch':h>=16&&h<22?'dinner':'snack'};
+const typeSel=v=>`<select name="mt">${Object.entries(TYPES).map(([k,t])=>`<option value="${k}" ${k===v?'selected':''}>${t}</option>`).join('')}</select>`;
+const mealLi=m=>`<li class="m tap" data-act="detail" data-id="${m.id}">${th(m)}<div><b>${esc(m.name)}</b><small>${hm(m.eaten_at)}${m._q?', gönderilmedi':''}${m.protein||m.carbs||m.fat?`${dt('cp')}${+m.protein||0}${dt('cc')}${+m.carbs||0}${dt('cf')}${+m.fat||0}`:''}</small></div><span class="k">${m.kcal}</span><button class="x" data-act="del" data-id="${m.id}" aria-label="Sil">×</button></li>`;
+function mealList(){
+ if(!S.meals.length)return`<div class="empty">Bu gün için öğün yok. “Öğün ekle” ile başla.</div>`;
+ return[...Object.keys(TYPES),''].map(t=>{const ms=S.meals.filter(m=>(m.meal_type||'')===t);if(!ms.length)return'';
+  return`<div class="gh"><b>${TYPES[t]||'Diğer'}</b><small>${ms.reduce((a,m)=>a+m.kcal,0)} kcal</small></div><ul>${ms.map(mealLi).join('')}</ul>`}).join('')}
+/* sık yediklerim */
+const freqChips=()=>S.freq?.length?`<small class="mute">Sık yediklerin (tek dokunuşla ekle):</small><div class="row" style="flex-wrap:wrap;margin:6px 0 12px">${S.freq.map((x,i)=>`<button class="btn ghost sm" data-act="freq" data-id="${i}">${esc(x.name)}</button>`).join('')}</div>`:'';
+async function loadFreq(){
+ const a=new Date();a.setDate(a.getDate()-90);
+ const{data}=await db.from('meals').select('name,kcal,protein,carbs,fat,items,shared,eaten_at').eq('user_id',S.me.id).gte('eaten_at',a.toISOString()).order('eaten_at',{ascending:false}).limit(300);
+ const g={};(data||[]).forEach(m=>{(g[m.name.trim().toLowerCase()]??={...m,n:0}).n++});
+ S.hist=Object.values(g);S.freq=Object.values(g).sort((a,b)=>b.n-a.n).slice(0,8);if(S.sheet&&!(S.q||'').trim())render()}
+/* seri */
+const dkey=d=>d.toLocaleDateString('sv-SE');
+function streak(set){let n=0;const d=new Date();if(!set.has(dkey(d)))d.setDate(d.getDate()-1);while(set.has(dkey(d))){n++;d.setDate(d.getDate()-1)}return n}
+async function loadStreaks(ids){
+ const a=new Date();a.setDate(a.getDate()-120);
+ const{data}=await db.from('meals').select('user_id,eaten_at').in('user_id',ids).gte('eaten_at',a.toISOString()).limit(3000);
+ const by={};(data||[]).forEach(m=>(by[m.user_id]??=new Set()).add(dkey(new Date(m.eaten_at))));
+ S.st={};ids.forEach(i=>S.st[i]=streak(by[i]||new Set()))}
+const streakLine=()=>(S.st?.[S.me.id]||0)>=2?`<div class="newb" style="margin:-6px 0 10px;text-align:center">${S.st[S.me.id]} günlük seri</div>`:'';
+/* gün değerlendirmesi */
+const sig=()=>S.meals.map(m=>m.id).join();
+function adviceView(){
+ if(!S.meals.length)return'';const a=S.adv?.k===S.day.toDateString()&&S.adv.sig===sig()?S.adv:null;
+ if(!a)return`<button class="btn ghost" style="margin-top:14px" data-act="advice">Günü değerlendir</button>`;
+ if(a.busy)return`<div class="card" style="margin-top:14px"><small>Değerlendiriliyor (10-20 sn)...</small></div>`;
+ const r=a.res;
+ return`<div class="card" style="margin-top:14px"><b>Gün değerlendirmesi</b><p style="margin:8px 0">${esc(r.summary)}</p>
+ ${r.why?.length?`<small class="mute">Neden böyle oldu</small><ul>${r.why.map(x=>`<li><small>• ${esc(x)}</small></li>`).join('')}</ul>`:''}
+ ${r.fix?.length?`<small class="mute">Tamamlamak için</small><ul>${r.fix.map(x=>`<li class="m"><div><b>${esc(x.food)}</b><small>${esc(x.amount)}</small></div><span class="k">${Math.round(+x.kcal||0)} kcal</span></li>`).join('')}</ul>`:''}
+ ${r.tip?`<p style="margin-top:6px"><small>${esc(r.tip)}</small></p>`:''}<small class="mute" style="display:block;margin-top:6px">Yapay zeka tahmini, tıbbi tavsiye değildir.</small></div>`}
+async function askDay(){
+ const g=S.p.daily_goal,sm=k=>Math.round(S.meals.reduce((a,m)=>a+(+m[k]||0),0)),eaten=sm('kcal'),ratio=eaten/g,k=S.day.toDateString(),sg=sig();
+ S.adv={k,sig:sg,busy:true};render();
+ const day={goal:g,eaten,status:ratio>1.1?'over':ratio<.9?'under':'ok',protein:sm('protein'),carbs:sm('carbs'),fat:sm('fat'),weight_kg:S.body?.weight_kg||null,meals:S.meals.map(m=>({type:TYPES[m.meal_type]||'diğer',time:hm(m.eaten_at),name:m.name,kcal:m.kcal,p:m.protein,c:m.carbs,f:m.fat}))};
+ const call=db.functions.invoke('analyze-meal',{body:{mode:'day',day}});
+ const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+ const{data}=await Promise.race([call,to]);
+ if(!data||data.error||!data.summary){S.adv=null;toast(data?.error||'Değerlendirme yapılamadı. Fonksiyonu güncellediğinden emin ol.');return render()}
+ S.adv={k,sig:sg,res:data};render()}
+/* tepkiler */
+const EM=['👍','❤️','😋','💪'];
+function rxView(m){
+ const l=S.rx?.id===m.id?S.rx.list:[],mine=l.find(x=>x.user_id===S.me.id)?.emoji;
+ return`<h2>Tepkiler</h2><div class="row" style="flex-wrap:wrap">${EM.map(e=>`<button class="btn ghost sm" style="${mine===e?'background:var(--acc);color:#fff':''}" data-act="rx" data-id="${e}">${e} ${l.filter(x=>x.emoji===e).length||''}</button>`).join('')}</div>${l.length?`<small class="mute" style="display:block;margin-top:8px">${l.map(x=>(x.user_id===S.me.id?'Sen':esc(S.names[x.user_id]||'?'))+' '+x.emoji).join(', ')}</small>`:''}${notesView(m)}`}
+async function loadRx(id){const{data}=await db.from('reactions').select('user_id,emoji').eq('meal_id',id);const{data:cm}=await db.from('comments').select('id,user_id,body,created_at').eq('meal_id',id).order('created_at');S.rx={id,list:data||[],cm:cm||[]};if(S.detail?.id===id)render()}
+/* barkod */
+let scanner=null;
+async function stopScan(){try{await scanner?.stop();scanner?.clear()}catch{}scanner=null}
+async function startScan(){
+ try{const F=Html5QrcodeSupportedFormats;scanner=new Html5Qrcode('reader',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E],verbose:false});
+  await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:140}},async c=>{await stopScan();lookup(c)},()=>{})}
+ catch{toast('Kamera açılamadı. Barkodu elle yazabilirsin.')}}
+const bcView=()=>`<div class="ov"><div class="sheet"><div class="row sp"><h1 style="font-size:22px">Barkod okut</h1><button class="x" data-act="bcclose" aria-label="Kapat">×</button></div>
+ <div id="reader" style="margin:12px 0;border-radius:14px;overflow:hidden;min-height:120px"></div>
+ <small class="mute">Barkodu çerçevenin içine al. Okunmazsa numarayı elle yaz:</small>
+ <form data-form="bc" class="row" style="align-items:flex-end;margin-top:8px"><div style="flex:1"><input type="text" name="code" inputmode="numeric" pattern="[0-9]{8,14}" placeholder="8690..." style="margin:0"></div><button class="btn sm" style="height:50px">Ara</button></form>
+ ${S.bc?.busy?'<small>Ürün aranıyor...</small>':''}</div></div>`;
+async function lookup(code){
+ S.bc={busy:true};render();
+ try{const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_tr,brands,nutriments,serving_quantity`);
+  const j=await r.json(),p=j.product,n=p?.nutriments||{},kcal=n['energy-kcal_100g']??(n.energy_100g?n.energy_100g/4.184:null);
+  if(j.status!==1||!p||kcal==null){S.bc=null;render();return toast('Ürün bulunamadı ya da besin bilgisi yok. Fotoğraftan ya da elle ekle.')}
+  const nm=((p.product_name_tr||p.product_name||'Ürün')+(p.brands?` (${p.brands.split(',')[0]})`:'')).slice(0,60),g=+p.serving_quantity>0?+p.serving_quantity:100;
+  S.bc=null;S.ai={photos:[],note:'',barcode:true,res:{name:nm,confidence:'exact',source:'Open Food Facts',questions:['Gramı, yediğin miktara göre düzelt (paketin tamamı mı, bir porsiyon mu?).'],items:[{name:nm,grams:g,kcal_per_100g:+kcal,protein_per_100g:+n.proteins_100g||0,carbs_per_100g:+n.carbohydrates_100g||0,fat_per_100g:+n.fat_100g||0}]}};render()}
+ catch{S.bc=null;render();toast('Bağlantı hatası, tekrar dene.')}}
+/* kilo */
+function weightView(){
+ const w=[...(S.wt||[])].reverse().slice(-30),last=S.wt?.[0];let ch='';
+ if(w.length>1){const v=w.map(x=>+x.kg),mn=Math.min(...v)-.5,mx=Math.max(...v)+.5,X=i=>10+i*280/(w.length-1),Y=y=>110-(y-mn)/(mx-mn)*100;
+  ch=`<svg viewBox="0 0 300 120" width="100%" role="img" aria-label="Kilo grafiği"><polyline fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linejoin="round" points="${v.map((y,i)=>X(i)+','+Y(y)).join(' ')}"/>${v.map((y,i)=>`<circle cx="${X(i)}" cy="${Y(y)}" r="3.5" fill="var(--acc)"/>`).join('')}</svg>`}
+ const d=w.length>1?+(last.kg-w[0].kg):0;
+ return`<form data-form="weight" class="card"><label>Bugünkü kilon (kg)</label><input type="number" name="kg" step="0.1" min="30" max="300" inputmode="decimal" required value="${last?.kg??''}"><button class="btn">Kaydet</button><small class="mute" style="display:block;margin-top:8px">Haftada bir, aynı saatte tartılmak en sağlıklısı. Kaydedince günlük hedefin de yeniden hesaplanır.</small></form>
+ ${w.length?`<div class="card" style="margin-top:10px"><div class="row sp"><div><div class="big">${+last.kg}<small> kg</small></div><small>${last.day}</small></div>${w.length>1?`<div style="text-align:right"><b>${d>0?'+':''}${d.toFixed(1)} kg</b><small style="display:block">${w[0].day} tarihinden beri</small></div>`:''}</div>${ch}</div>
+ <h2>Kayıtlar</h2><div class="card" style="padding:4px 16px">${S.wt.slice(0,10).map(x=>`<div class="it"><b>${x.day}</b><span class="row"><span class="k">${+x.kg} kg</span><button class="x" data-act="wdel" data-id="${x.day}" aria-label="Sil">×</button></span></div>`).join('')}</div>`:'<div class="empty">Henüz kilo kaydı yok.</div>'}`}
+/* ---------- v8 ---------- */
+function applyTheme(){let t=null;try{t=localStorage.getItem('theme')}catch{}
+ if(t&&t!=='auto')document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
+ const m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);applyTheme();
+async function toPhone(f,name='yemek.jpg'){
+ const file=f instanceof File?f:new File([f],name,{type:'image/jpeg'});
+ try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name==='AbortError')return}
+ const u=URL.createObjectURL(file),a=document.createElement('a');a.href=u;a.download=file.name;a.click();toast('Fotoğraf indirilenlere kaydedildi.')}
+async function prefetchPhoto(m){const u=S.urls[m?.photo_path];if(!u)return;try{const b=await(await fetch(u)).blob();S.pb={id:m.id,b};if(S.detail?.id===m.id)render()}catch{}}
+const savedBarView=()=>`<div class="sbar"><span style="flex:1">Fotoğrafı telefonuna da kaydetmek ister misin?</span><button class="btn sm" data-act="tophone">Kaydet</button><button class="x" data-act="sclose" aria-label="Kapat">×</button></div>`;
+async function cleanupPhotos(){
+ const today=dkey(new Date());try{if(localStorage.getItem('clean')===today)return}catch{}
+ try{const a=new Date();a.setDate(a.getDate()-60);
+  const{data}=await db.from('meals').select('id,photo_path').eq('user_id',S.me.id).not('photo_path','is',null).lt('eaten_at',a.toISOString()).limit(100);
+  if(data?.length){const r=await db.storage.from('meal-photos').remove(data.map(x=>x.photo_path));if(!r.error)await db.from('meals').update({photo_path:null}).in('id',data.map(x=>x.id))}
+  const o=new Date();o.setDate(o.getDate()-30);await db.from('notifications').delete().eq('user_id',S.me.id).lt('created_at',o.toISOString());localStorage.setItem('clean',today)}catch{}}
+function remindView(){
+ if(S.day.toDateString()!==new Date().toDateString()||localStorage.getItem('rem_off')==='1')return'';
+ const h=new Date().getHours();let o='';
+ if(new Date().getDay()===0)o+=`<div class="card" style="margin-bottom:10px"><div class="row sp"><div><b>Haftalık özetin hazır</b><small style="display:block">Bu haftanın raporuna göz at.</small></div><button class="btn sm" data-act="wkopen">Aç</button></div></div>`;
+ if(!S.meals.length&&h>=11)o+=`<div class="card" style="margin-bottom:10px"><b>Bugün henüz öğün eklemedin</b><small style="display:block">Yediklerini eklemek için “Öğün ekle”ye dokun.</small></div>`;
+ return o}
+function notesView(m){
+ const l=S.rx?.id===m.id?S.rx.cm||[]:[];
+ return`<h2>Notlar</h2><small class="mute">Bir notu, yazan kişiyle arkadaş olanlar ve öğün sahibi görür.</small>${l.map(c=>`<div class="it" style="align-items:flex-start"><div><b>${c.user_id===S.me.id?'Sen':esc(S.names[c.user_id]||'?')}</b><small style="display:block;color:var(--ink)">${esc(c.body)}</small></div>${c.user_id===S.me.id||m.user_id===S.me.id?`<button class="x" data-act="cdel" data-id="${c.id}" aria-label="Notu sil">×</button>`:''}</div>`).join('')}
+ <form data-form="note" class="row" style="margin-top:8px"><input type="text" name="t" maxlength="200" placeholder="Kısa bir not yaz..." style="margin:0;flex:1" required><button class="btn sm" style="height:50px">Gönder</button></form>`}
+const wname=d=>d.toLocaleDateString('tr-TR',{weekday:'long'});
+function weekWeight(){const l=S.wt?.[0];if(!l)return null;const ref=new Date();ref.setDate(ref.getDate()-7);const o=S.wt.find(x=>x.day<=dkey(ref));return o?+(l.kg-o.kg):null}
+function weekCard(){
+ const d=S.rep.slice(-7),lg=d.filter(x=>x.n);if(!lg.length)return'';
+ const g=S.p.daily_goal,pk=lg.reduce((a,x)=>x.p>a.p?x:a,lg[0]),hi=lg.reduce((a,x)=>x.kcal>a.kcal?x:a,lg[0]),near=lg.filter(x=>Math.abs(x.kcal-g)<=g*.1).length,wk=weekWeight(),w=S.wkAI;
+ const row=(t,s,v)=>`<li class="m"><div><b>${t}</b><small>${s}</small></div><span class="k">${v}</span></li>`;
+ return`<h2>Haftanın özeti</h2><div class="card"><ul>${row('Hedefe yakın günler','hedefin ±%10 içinde',near+'/'+lg.length)}${row('En çok protein',wname(pk.d),Math.round(pk.p)+' g')}${row('En yüksek kalori',wname(hi.d),hi.kcal+' kcal')}${wk!==null?row('Kilo değişimi','son 7 gün',(wk>0?'+':'')+wk.toFixed(1)+' kg'):''}</ul>
+ ${w?.busy?'<small>Yorum yazılıyor (10-20 sn)...</small>':w?.res?`<p style="margin:8px 0">${esc(w.res.comment)}</p>${w.res.wins?.length?`<small class="mute">İyi giden</small><ul>${w.res.wins.map(x=>`<li><small>• ${esc(x)}</small></li>`).join('')}</ul>`:''}${w.res.focus?.length?`<small class="mute">Gelecek hafta için</small><ul>${w.res.focus.map(x=>`<li><small>• ${esc(x)}</small></li>`).join('')}</ul>`:''}<small class="mute" style="display:block">Yapay zeka tahmini, tıbbi tavsiye değildir.</small>`:`<button class="btn ghost" style="margin-top:8px" data-act="weekai">Yapay zekadan yorum al</button>`}</div>`}
+async function askWeek(){
+ const d=S.rep.slice(-7);S.wkAI={busy:true};render();
+ const day={goal:S.p.daily_goal,weight_change_kg:weekWeight(),days:d.map(x=>({date:dkey(x.d),kcal:x.kcal,protein:Math.round(x.p),carbs:Math.round(x.c),fat:Math.round(x.f),n:x.n}))};
+ const call=db.functions.invoke('analyze-meal',{body:{mode:'week',day}});
+ const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+ const{data}=await Promise.race([call,to]);
+ if(!data||data.error||!data.comment){S.wkAI=null;toast(data?.error||'Yorum alınamadı. Fonksiyonu güncellediğinden emin ol.');return render()}
+ S.wkAI={res:data};render()}
+app.addEventListener('change',e=>{if(e.target.matches('[data-rem]')){try{localStorage.setItem('rem_off',e.target.checked?'0':'1')}catch{}}});
+/* ---------- v9: bildirimler ---------- */
+const ago=t=>{const m=Math.round((Date.now()-new Date(t))/6e4);return m<1?'şimdi':m<60?m+' dk önce':m<1440?Math.round(m/60)+' sa önce':Math.round(m/1440)+' gün önce'};
+const ntText=n=>{const w=S.names[n.actor_id]||S.pr[n.actor_id]?.username||'Biri';
+ return n.type==='reaction'?`${w} öğününe ${n.text} bıraktı`:n.type==='comment'?`${w} not yazdı: ${n.text}`:`${w} bir öğün ekledi: ${n.text}`};
+function notifView(){
+ const l=S.nt||[];
+ return`<h1 style="margin:6px 0 14px">Bildirimler</h1>${l.some(x=>!x.read)?`<button class="btn ghost sm" style="margin-bottom:10px" data-act="ntall">Hepsini okundu yap</button>`:''}
+ ${l.length?`<div class="card" style="padding:4px 16px"><ul>${l.map(n=>`<li class="m tap" data-act="ntopen" data-id="${n.id}">${avatar(n.actor_id,40)}<div><b style="${n.read?'font-weight:500':''}">${esc(ntText(n))}</b><small>${ago(n.created_at)}</small></div>${n.read?'':'<span class="newb">●</span>'}<span class="mute">›</span></li>`).join('')}</ul></div>`:'<div class="empty">Henüz bildirim yok.</div>'}`}
+async function ntopen(id){
+ const n=S.nt.find(x=>x.id===id);if(!n)return;
+ if(!n.read){n.read=true;db.from('notifications').update({read:true}).eq('id',id).then(()=>{})}
+ const{data:m}=n.meal_id?await db.from('meals').select('*').eq('id',n.meal_id).maybeSingle():{};
+ if(!m){toast('Bu öğün artık yok.');return render()}
+ if(m.photo_path&&!S.urls[m.photo_path]){const{data:u}=await db.storage.from('meal-photos').createSignedUrl(m.photo_path,3600);if(u?.signedUrl)S.urls[m.photo_path]=u.signedUrl}
+ S.detail=m;S.rx=null;S.pb=null;render();loadRx(m.id);prefetchPhoto(m)}
+const urlB64=s=>{const r=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function pushOn(){
+ if(typeof VAPID_PUBLIC==='undefined'||!VAPID_PUBLIC)return toast('config.js içinde VAPID_PUBLIC satırı yok.');
+ if(!('PushManager' in window)||!('Notification' in window))return toast('Önce uygulamayı ana ekrana ekle ve oradan aç (iOS 16.4 ve üstü).');
+ try{if(await Notification.requestPermission()!=='granted')return toast('Bildirim izni verilmedi. iPhone Ayarlar > Bildirimler > Kalori üzerinden açabilirsin.');
+  const reg=await navigator.serviceWorker.ready;
+  const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlB64(VAPID_PUBLIC)}),j=sub.toJSON();
+  const r=await db.from('push_subscriptions').upsert({user_id:S.me.id,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth},{onConflict:'endpoint'});
+  toast(r.error?trErr(r.error.message):'Bildirimler açıldı.')}catch(e){toast('Bildirim açılamadı: '+(e.message||e))}}
+async function pushOff(){
+ try{const sub=await(await navigator.serviceWorker.ready).pushManager.getSubscription();
+  if(sub){await db.from('push_subscriptions').delete().eq('endpoint',sub.endpoint);await sub.unsubscribe()}toast('Bildirimler kapatıldı.')}catch{toast('Kapatılamadı.')}}
+async function pushTest(){
+ if(!('Notification' in window))return toast('Bu cihazda bildirim desteği yok. Ana ekran simgesinden açtığından emin ol.');
+ const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+ const host=sub?new URL(sub.endpoint).host:'YOK';
+ toast('İzin: '+Notification.permission+' | abonelik: '+host+' | 6 sn içinde ana ekrana çık');
+ if(Notification.permission==='granted')setTimeout(()=>reg.showNotification('Kalori',{body:'Test bildirimi çalışıyor',icon:'icon-180.png'}),6000)}
+/* ---------- v12: öğün düzenleme ve bildirim ayarları ---------- */
+const totOf=it=>{const s=k=>it.reduce((a,x)=>a+x.grams*(+x[k]||0)/100,0);return{kcal:s('kcal_per_100g'),p:s('protein_per_100g'),c:s('carbs_per_100g'),f:s('fat_per_100g')}};
+function editView(){
+ const e=S.ed,it=e.items,t=it?totOf(it):null,num=(n,v,st)=>`<input type="number" name="${n}" min="0" ${st?'step="any" inputmode="decimal"':'inputmode="numeric"'} value="${v??''}">`;
+ return`<div class="ov"><div class="sheet"><div class="row sp"><h1 style="font-size:22px">Öğünü düzenle</h1><button class="x" data-act="edclose" aria-label="Kapat">×</button></div>
+ <form data-form="edit" style="margin-top:12px"><label>Ad</label><input type="text" name="name" required maxlength="80" value="${esc(e.name)}">
+ <div class="row" style="align-items:flex-start"><div style="flex:1"><label>Öğün</label>${typeSel(e.mt)}</div><div style="flex:1"><label>Saat</label><input type="time" name="tm" required value="${e.time}"></div></div>
+ ${it?`<h2 style="margin-top:4px">Gramları düzelt</h2>${it.map((x,i)=>`<div class="it"><div><b>${esc(x.name)}</b><small id="ek${i}">${im(x)}</small>${(x.alt||[]).length?`<small class="mute">Belki: ${x.alt.slice(0,2).map((n,k)=>`<button type="button" class="mini" data-act="edalt" data-id="${i}:${k}">${esc(n)}</button>`).join(' ')}</small>`:''}<button type="button" class="mini" data-act="edfix" data-id="${i}">Bu ne? Düzelt</button></div><div class="row"><input type="number" inputmode="decimal" data-eg="${i}" value="${Math.round(x.grams)}" min="0" style="margin:0;width:78px" aria-label="gram"><button type="button" class="x" data-act="edel" data-id="${i}" aria-label="Kaldır">×</button></div></div>`).join('')}
+  <div class="row" style="flex-wrap:wrap;margin:10px 0"><small class="mute">Ekle:</small>${PRE.map((p,i)=>`<button type="button" class="btn ghost sm" data-act="edadd" data-id="${i}">${p.name}</button>`).join('')}</div>
+  <div class="card" style="margin-bottom:12px"><div class="big" id="etk">${Math.round(t.kcal)} kcal</div><small id="etm">${macroLine(t)}</small></div>`
+ :`<label>Kalori (kcal)</label><input type="number" name="kcal" required min="0" max="5000" inputmode="numeric" value="${e.kcal}"><div class="g3"><div><label>Protein g</label>${num('protein',e.protein,1)}</div><div><label>Karb. g</label>${num('carbs',e.carbs,1)}</div><div><label>Yağ g</label>${num('fat',e.fat,1)}</div></div>`}
+ <label class="chk"><input type="checkbox" name="shared" ${e.shared?'checked':''}> Arkadaşlarım görebilsin</label><button class="btn">Kaydet</button></form></div></div>`}
+function readEd(){const f=document.querySelector('[data-form=edit]');if(!f||!S.ed)return;const g=n=>f.elements[n];S.ed.name=g('name').value;S.ed.mt=g('mt').value;S.ed.time=g('tm').value;S.ed.shared=g('shared').checked}
+function edRecalc(){const e=S.ed,t=totOf(e.items);
+ e.items.forEach((x,i)=>{const el=document.getElementById('ek'+i);if(el)el.innerHTML=im(x)});
+ document.getElementById('etk').textContent=Math.round(t.kcal)+' kcal';
+ document.getElementById('etm').innerHTML=macroLine(t)}
+app.addEventListener('input',e=>{const t=e.target;if(t.dataset.eg!==undefined&&S.ed?.items){S.ed.items[+t.dataset.eg].grams=Math.max(0,+t.value||0);edRecalc()}});
+function npView(){
+ const p={meals:true,reactions:true,comments:true,muted:[],...S.np},fr=S.fr.filter(x=>x.status==='accepted').map(x=>x.requester===S.me.id?x.addressee:x.requester);
+ return`<h2>Bildirim ayarları</h2><label class="chk"><input type="checkbox" data-np="meals" ${p.meals?'checked':''}> Arkadaşım öğün eklediğinde</label>
+ <label class="chk"><input type="checkbox" data-np="reactions" ${p.reactions?'checked':''}> Öğünüme tepki bıraktığında</label>
+ <label class="chk"><input type="checkbox" data-np="comments" ${p.comments?'checked':''}> Not yazıldığında</label>
+ ${fr.length?`<small class="mute">Sessize al (o kişiden hiç bildirim gelmez):</small>${fr.map(id=>`<label class="chk"><input type="checkbox" data-mute="${id}" ${p.muted.includes(id)?'checked':''}> ${esc(S.names[id]||'?')}</label>`).join('')}`:''}`}
+app.addEventListener('change',async e=>{
+ const t=e.target;if(!t.matches('[data-np],[data-mute]'))return;
+ const p=S.np={meals:true,reactions:true,comments:true,muted:[],...S.np};
+ if(t.dataset.np)p[t.dataset.np]=t.checked;else p.muted=t.checked?[...new Set([...p.muted,t.dataset.mute])]:p.muted.filter(x=>x!==t.dataset.mute);
+ const r=await db.from('notif_prefs').upsert({user_id:S.me.id,meals:p.meals,reactions:p.reactions,comments:p.comments,muted:p.muted});
+ toast(r.error?trErr(r.error.message):'Kaydedildi.')});
+/* ---------- v13: arayüz ---------- */
+const sv=p=>`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC={home:sv('<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>'),
+ users:sv('<circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c0-3.5 2.8-5.8 6.2-5.8s6.2 2.3 6.2 5.8"/><circle cx="17" cy="9" r="2.6"/><path d="M17.4 14.3c2.5.2 4.3 2 4.3 4.7"/>'),
+ chart:sv('<path d="M5 20v-8M12 20V4M19 20v-5"/>'),user:sv('<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/>'),
+ bell:sv('<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/>'),
+ bc:sv('<path d="M3 8V4.5A1.5 1.5 0 0 1 4.5 3H8M16 3h3.5A1.5 1.5 0 0 1 21 4.5V8M21 16v3.5a1.5 1.5 0 0 1-1.5 1.5H16M8 21H4.5A1.5 1.5 0 0 1 3 19.5V16"/><path d="M8 8v8M11.5 8v8M15 8v8"/>'),
+ search:sv('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>')};
+const dt=c=>`<i class="d" style="background:var(--${c})"></i>`;
+const macroLine=t=>dt('cp')+'protein '+Math.round(t.p)+' g '+dt('cc')+'karb. '+Math.round(t.c)+' g '+dt('cf')+'yağ '+Math.round(t.f)+' g';
+const unreadN=()=>(S.nt||[]).filter(x=>!x.read).length;
+const appbar=()=>`<header class="appbar"><div><b>Kalori</b><button class="bell" data-act="bell" aria-label="Bildirimler">${IC.bell}${unreadN()?`<i class="nb">${unreadN()}</i>`:''}</button></div></header>`;
+const navHtml=pend=>{const t=(k,l,ic)=>`<button data-act="tab" data-id="${k}" class="${S.tab===k?'on':''}">${ic}<span>${l}</span>${k==='friends'&&pend?`<i class="nb">${pend}</i>`:''}</button>`;
+ return`<nav><div>${t('today','Bugün',IC.home)}${t('friends','Arkadaşlar',IC.users)}<button class="plus" data-act="add" aria-label="Öğün ekle">+</button>${t('report','Rapor',IC.chart)}${t('settings','Profil',IC.user)}</div></nav>`};
+function offItem(p){const n=p.nutriments||{},k=n['energy-kcal_100g']??(n.energy_100g?n.energy_100g/4.184:null);if(k==null)return null;
+ const nm=((p.product_name_tr||p.product_name||'').trim()+(p.brands?` (${p.brands.split(',')[0]})`:'')).slice(0,60);if(!nm.trim())return null;
+ return{name:nm,grams:+p.serving_quantity>0?+p.serving_quantity:100,kcal_per_100g:+k,protein_per_100g:+n.proteins_100g||0,carbs_per_100g:+n.carbohydrates_100g||0,fat_per_100g:+n.fat_100g||0}}
+const setQres=()=>{const e=document.getElementById('qres');if(e)e.innerHTML=qresHtml()};
+function qresHtml(){
+ const q=(S.q||'').trim();if(!q)return'';const r=S.qr||{my:[],off:[],busy:false};
+ return`${r.my.length?`<small class="mute">Geçmişte yediklerin</small><ul>${r.my.map((x,i)=>`<li class="m tap" data-act="qmy" data-id="${i}"><div><b>${esc(x.name)}</b><small>${x.kcal} kcal</small></div><span class="mute">+</span></li>`).join('')}</ul>`:''}
+ <button class="frow" data-act="qai"><span style="flex:1"><b>“${esc(q)}” için yapay zekayla hesapla</b><small style="display:block">Porsiyonu da yazabilirsin: “2 kase mercimek çorbası”</small></span><span class="mute">›</span></button>
+ ${r.off.length?`<small class="mute">Paketli ürünler</small><ul>${r.off.map((x,i)=>`<li class="m tap" data-act="qoff" data-id="${i}"><div><b>${esc(x.name)}</b><small>100 g: ${Math.round(x.kcal_per_100g)} kcal</small></div><span class="mute">+</span></li>`).join('')}</ul>`:r.busy?'<small class="mute">Paketli ürünler aranıyor...</small>':''}`}
+async function searchFoods(q){
+ const lq=q.toLocaleLowerCase('tr');
+ S.qr={my:(S.hist||[]).filter(x=>x.name.toLocaleLowerCase('tr').includes(lq)).slice(0,5),off:[],busy:true,q};setQres();
+ try{const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&lc=tr&fields=code,product_name,product_name_tr,brands,nutriments,serving_quantity`,{signal:AbortSignal.timeout(9000)});
+  const j=await r.json();if(S.qr?.q!==q)return;S.qr.off=(j.products||[]).map(offItem).filter(Boolean).slice(0,6)}catch{}
+ if(S.qr?.q===q){S.qr.busy=false;setQres()}}
+async function addCopy(x){
+ const d=new Date(S.day),n=new Date();d.setHours(n.getHours(),n.getMinutes());
+ const r=await saveMeal({name:x.name,kcal:x.kcal,protein:x.protein,carbs:x.carbs,fat:x.fat,items:x.items,photo_path:x.photo_path||null,eaten_at:d.toISOString(),meal_type:defType(),shared:x.shared??true});
+ if(r.error)return toast(trErr(r.error.message));
+ S.sheet=false;S.detail=null;S.stT=0;if(!r.queued)toast(x.name+' eklendi. Gramı Düzenle ile değiştirebilirsin.');load()}
+async function aiText(){
+ const q=(S.q||'').trim();S.sheet=false;S.ai={photos:[],note:q,text:true,res:null};render();
+ const call=db.functions.invoke('analyze-meal',{body:{mode:'text',note:q}});
+ const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+ const{data}=await Promise.race([call,to]);
+ if(!data||data.error||!Array.isArray(data.items)||!data.items.length){S.ai=null;toast(data?.error||'Hesaplanamadı. Fonksiyonu güncellediğinden emin ol.');return render()}
+ data.items=data.items.map(x=>({...x,grams:Math.max(0,+x.grams||0),kcal_per_100g:+x.kcal_per_100g||0}));
+ S.ai={photos:[],note:q,text:true,orig:JSON.parse(JSON.stringify(data.items)),res:data};render()}
+let qt=null;
+app.addEventListener('input',e=>{const t=e.target;if(!t.matches('[data-q]'))return;
+ S.q=t.value;const q=S.q.trim(),d=document.getElementById('qdef');if(d)d.style.display=q?'none':'';
+ clearTimeout(qt);if(!q){S.qr=null;setQres();return}
+ S.qr={my:(S.hist||[]).filter(x=>x.name.toLocaleLowerCase('tr').includes(q.toLocaleLowerCase('tr'))).slice(0,5),off:[],busy:false,q};setQres();
+ qt=setTimeout(()=>searchFoods(q),500)});
+/* ---------- v14: kalori ve makro hedefi ---------- */
+function calcPlan(b){
+ const age=new Date().getFullYear()-b.birth_year,w=+b.weight_kg,h=+b.height_cm,m=b.sex==='m',lifts=!!b.lifts;
+ const bmr=10*w+6.25*h-5*age+(m?5:-161);
+ const wk=b.workouts??({sedentary:0,light:2,moderate:4,high:6}[b.activity]??2);
+ const tdee=bmr*(1.2+.05*Math.min(wk,7)),bmi=w/((h/100)**2);
+ let goal=b.goal,note='',eff=goal;
+ if(goal==='lose'&&bmi<18.5){eff='maintain';note='Kilo indeksin düşük olduğu için kilo verme hedefi uygulanmadı. '}
+ if(goal==='muscle'&&!lifts){eff='maintain';note='Kas kazanmak için ağırlık antrenmanı gerekir; antrenman olmadan fazla kalori kasa değil yağa gider, bu yüzden kalorin bakım düzeyinde tutuldu. '}
+ const adj=eff==='lose'?-Math.min(600,Math.max(250,tdee*.15)):eff==='gain'?Math.min(300,Math.max(150,tdee*.07)):eff==='muscle'?Math.min(200,Math.max(100,tdee*.05)):0;
+ const kcal=Math.round(Math.max(tdee+adj,m?1500:1200,eff==='lose'?bmr:0)/10)*10;
+ const hi=wk>=3;
+ const pk=lifts?({lose:2.2,maintain:1.6,gain:1.9,muscle:2.0}[goal==='muscle'?'muscle':eff]):({lose:hi?1.6:1.3,maintain:hi?1.4:1,gain:hi?1.6:1.2,muscle:1.4}[eff]);
+ const p=Math.min(Math.round(w*pk),Math.round(kcal*.35/4));let f=Math.round(kcal*.27/9),c=Math.round((kcal-4*p-9*f)/4);
+ if(c<100){f=Math.round(kcal*.2/9);c=Math.max(0,Math.round((kcal-4*p-9*f)/4))}
+ return{bmr:Math.round(bmr),tdee:Math.round(tdee),adj:kcal-Math.round(tdee),kcal,p,c,f,bmi,wk,note,goal,lifts,pk:p/w}}
+const planOf=()=>{const b=S.body;return b?.sex&&b.birth_year&&b.height_cm&&b.weight_kg?calcPlan(b):null};
+const tg=k=>{const pl=planOf();return pl?` / ${pl[k]} g`:''};
+function planView(){
+ const pl=planOf();
+ if(!pl)return`<div class="card"><div class="big">${S.p.daily_goal}<small> kcal</small></div><small>Hedefini hesaplamak için aşağıdaki bilgileri doldur.</small></div>`;
+ const pc=(g,k)=>Math.round(g*k/pl.kcal*100),gl={lose:'kilo verme',gain:'kilo alma',maintain:'kiloyu koruma',muscle:'kas kazanma, yağlanmadan'}[pl.goal];
+ return`<div class="card"><div class="big">${pl.kcal}<small> kcal / gün</small></div>
+ <div class="macros"><div class="k-p"><b>${pl.p} g</b><small>protein %${pc(pl.p,4)}</small></div><div class="k-c"><b>${pl.c} g</b><small>karbonhidrat %${pc(pl.c,4)}</small></div><div class="k-f"><b>${pl.f} g</b><small>yağ %${pc(pl.f,9)}</small></div></div>
+ <ul style="margin-top:12px"><li class="m"><div><b>Bazal metabolizma</b><small>dinlenirken yaktığın</small></div><span class="k">${pl.bmr}</span></li>
+ <li class="m"><div><b>Günlük harcama</b><small>haftada ${pl.wk} gün spor</small></div><span class="k">${pl.tdee}</span></li>
+ <li class="m"><div><b>Amaç farkı</b><small>${gl}</small></div><span class="k">${pl.adj>0?'+':''}${pl.adj}</span></li>
+ <li class="m"><div><b>Protein</b><small>kilo başına</small></div><span class="k">${pl.pk.toFixed(1)} g</span></li></ul>
+ <small class="mute" style="display:block;margin-top:6px">Kilo indeksin ${pl.bmi.toFixed(1)}. Bunlar tahmindir: 2-3 hafta kilonu izle, hızlı ya da yavaş değişiyorsa bilgilerini güncelle. ${esc(pl.note)}</small></div>`}
+/* ---------- v16: yanlış tanınan yemeği düzeltme ---------- */
+const askName=x=>(prompt('Bu aslında ne? Örn: ızgara bonfile',x.name)||'').trim();
+async function renameItem(items,i,name,done){
+ const old=items[i];toast('Yeniden hesaplanıyor...');
+ const call=db.functions.invoke('analyze-meal',{body:{mode:'text',fast:true,note:'100 g '+name}});
+ const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+ const{data}=await Promise.race([call,to]),it=data?.items?.[0];
+ if(!it){toast(data?.error||'Hesaplanamadı. Fonksiyonu güncellediğinden emin ol.');return}
+ items[i]={...it,name,grams:old.grams,alt:[]};done()}
+const keepName=()=>{const n=document.querySelector('[name=mname]');if(n&&S.ai?.res)S.ai.res.name=n.value};
+/* ---------- v17: çevrimdışı, akış, kopyala ---------- */
+const cget=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
+const cset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const Q=()=>cget('q')||[];
+const isNet=e=>/fetch|network|failed|load failed/i.test(e?.message||'');
+function qpush(row){cset('q',[...Q(),{id:'tmp_'+Date.now()+Math.random().toString(36).slice(2,6),row}]);toast('İnternet yok: öğün telefonda bekliyor, bağlantı gelince gönderilecek.');return{queued:true}}
+async function saveMeal(row){
+ if(!navigator.onLine)return qpush(row);
+ const r=await db.from('meals').insert(row);
+ return r.error&&isNet(r.error)?qpush(row):r}
+const queuedFor=(a,b)=>Q().filter(x=>x.row.eaten_at>=a&&x.row.eaten_at<b).map(x=>({...x.row,id:x.id,user_id:S.me.id,_q:true}));
+let flushing=false;
+async function flushQueue(){
+ const q=Q();if(!q.length||!navigator.onLine||!S.me||flushing)return;flushing=true;
+ const rest=[];let sent=0;
+ try{for(const it of q){const r=await db.from('meals').insert(it.row);if(r.error&&isNet(r.error))rest.push(it);else if(!r.error)sent++}}finally{cset('q',rest);flushing=false}
+ if(sent){toast(sent+' bekleyen öğün gönderildi.');S.stT=0;load()}}
+const offBanner=()=>S.offline?`<div class="offb">Çevrimdışısın.${Q().length?' '+Q().length+' öğün gönderilmeyi bekliyor.':' Eklediklerin telefonda bekler, bağlantı gelince gönderilir.'}</div>`:'';
+window.addEventListener('offline',()=>{S.offline=true;if(S.me)render()});
+window.addEventListener('online',()=>{if(S.offlineBoot){S.offlineBoot=false;boot()}else{S.offline=false;flushQueue().then(()=>refresh());if((S.pend||[]).some(x=>x.status!=='ready'))toast('Bekleyen fotoğrafların var, Bugün ekranından analiz edebilirsin.')}});
+const fseg=()=>`<div class="seg">${[['list','Arkadaşlar'],['feed','Akış']].map(([k,t])=>`<button class="${(S.fsub||'list')===k?'on':''}" data-act="fsub" data-id="${k}">${t}</button>`).join('')}</div>`;
+function feedCards(){
+ const l=S.ff||[];
+ return l.length?l.map(m=>`<div class="card tap" style="margin-bottom:12px;padding:0;overflow:hidden" data-act="detail" data-id="${m.id}">
+  <div class="row" style="padding:12px 14px;gap:10px">${avatar(m.user_id,36)}<div style="flex:1;min-width:0"><b>${esc(S.names[m.user_id]||'?')}</b><small style="display:block">${ago(m.eaten_at)}${m.meal_type?', '+TYPES[m.meal_type]:''}</small></div><span class="k">${m.kcal} kcal</span></div>
+  ${S.urls[m.photo_path]?`<img src="${S.urls[m.photo_path]}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block">`:''}
+  <div style="padding:10px 14px"><b>${esc(m.name)}</b><small style="display:block">${dt('cp')}${+m.protein||0} g${dt('cc')}${+m.carbs||0} g${dt('cf')}${+m.fat||0} g</small></div>${qrxRow(m)}</div>`).join(''):'<div class="empty">Arkadaşlarının son 7 günde paylaştığı öğünler burada görünür.</div>'}
+/* ---------- v20: bekleyen fotoğraflar (sonra analiz et) ---------- */
+const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('kalori',1);r.onupgradeneeded=()=>r.result.createObjectStore('pend',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function pendAll(){try{const d=await idb();return await new Promise((res,rej)=>{const q=d.transaction('pend').objectStore('pend').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}catch{return[]}}
+async function pendPut(it){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('pend','readwrite');t.objectStore('pend').put(it);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function pendDel(id){try{const d=await idb();return await new Promise((res,rej)=>{const t=d.transaction('pend','readwrite');t.objectStore('pend').delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch{}}
+const blobB64=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.readAsDataURL(b)});
+async function loadPend(){
+ (S.pend||[]).forEach(x=>{try{URL.revokeObjectURL(x.url)}catch{}});
+ const l=await pendAll();l.sort((a,b)=>a.at<b.at?-1:1);l.forEach(x=>{x.url=URL.createObjectURL(x.blobs[0])});S.pend=l}
+async function pendAddFromAi(){
+ const a=S.ai;a.note=document.querySelector('[name=note]')?.value||a.note||'';
+ if((S.pend||[]).length>=10)return toast('En fazla 10 bekleyen fotoğraf saklanabilir. Önce bazılarını analiz et ya da sil.');
+ const d=new Date(S.day),n=new Date();d.setHours(n.getHours(),n.getMinutes());
+ try{await pendPut({id:'p_'+Date.now(),at:d.toISOString(),note:a.note,blobs:a.photos.map(p=>p.blob),status:'wait'});
+  await loadPend();S.ai=null;S.tab='today';S.view=null;
+  toast(navigator.onLine?'Fotoğraf saklandı. Bugün ekranından analiz edebilirsin.':'İnternet yok. Fotoğraf telefonda saklandı, bağlantı gelince analiz edebilirsin.');render()}
+ catch{toast('Fotoğraf saklanamadı (depolama dolu olabilir).')}}
+const pendClean=x=>({id:x.id,at:x.at,note:x.note,blobs:x.blobs,status:x.status,res:x.res,orig:x.orig});
+async function analyzePend(id){
+ const x=(S.pend||[]).find(p=>p.id===id);if(!x||x.busy||!navigator.onLine)return;x.busy=true;render();
+ try{const imgs=await Promise.all(x.blobs.map(blobB64));
+  const call=db.functions.invoke('analyze-meal',{body:{images:imgs,note:x.note||''}});
+  const to=new Promise(r=>setTimeout(()=>r({data:{error:'Çok uzun sürdü, tekrar dene.'}}),60000));
+  const{data}=await Promise.race([call,to]);
+  if(!data||data.error||!Array.isArray(data.items)){toast(data?.error||'Analiz yapılamadı.');x.busy=false;return render()}
+  data.items=data.items.map(i=>({...i,grams:Math.max(0,+i.grams||0),kcal_per_100g:+i.kcal_per_100g||0}));
+  x.res=data;x.orig=JSON.parse(JSON.stringify(data.items));x.status='ready';x.busy=false;
+  await pendPut(pendClean(x));render()}
+ catch{x.busy=false;toast('Analiz yapılamadı.');render()}}
+async function openPend(id){
+ const x=(S.pend||[]).find(p=>p.id===id);if(!x?.res)return;
+ const photos=await Promise.all(x.blobs.map(async b=>({blob:b,b64:await blobB64(b),orig:b,url:URL.createObjectURL(b)})));
+ S.ai={photos,note:x.note||'',res:x.res,orig:x.orig,pendId:x.id,at:x.at};render()}
+function pendView(){
+ const l=S.pend||[];if(!l.length)return'';const on=navigator.onLine,wait=l.filter(x=>x.status!=='ready');
+ return`<div class="card" style="margin-bottom:10px"><b>Bekleyen fotoğraflar (${l.length})</b>${l.map(x=>`<div class="it"><div class="row" style="gap:10px"><img class="thumb" style="width:52px;height:52px" src="${x.url}" alt=""><div><b>${hm(x.at)}${x.blobs.length>1?', 2 açı':''}</b><small style="display:block">${x.status==='ready'?'Analiz hazır, kontrol et':x.busy?'Analiz ediliyor...':on?'Analiz bekliyor':'İnternet gelince analiz edilir'}</small></div></div><div class="row">${x.status==='ready'?`<button class="btn sm" data-act="pctl" data-id="${x.id}">Kontrol et</button>`:`<button class="btn sm" data-act="pan" data-id="${x.id}" ${on&&!x.busy?'':'disabled'}>Analiz et</button>`}<button class="x" data-act="pdel" data-id="${x.id}" aria-label="Sil">×</button></div></div>`).join('')}${wait.length>1&&on?`<button class="btn ghost sm" style="margin-top:8px" data-act="pall">Hepsini analiz et</button>`:''}</div>`}
+/* ---------- v21: hikâyeler ve hızlı tepki ---------- */
+const fold=s=>String(s||'').trim().toLocaleLowerCase('tr').replace(/[çğıöşüâîû]/g,c=>({'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','â':'a','î':'i','û':'u'}[c]));
+const sseen=id=>{try{return localStorage.getItem('story_'+id)||''}catch{return''}};
+const sdone=(id,t)=>{try{if(t>sseen(id))localStorage.setItem('story_'+id,t)}catch{}};
+function storiesOf(){const lim=Date.now()-864e5,by={};
+ (S.ff||[]).filter(m=>new Date(m.eaten_at)>lim).forEach(m=>(by[m.user_id]??=[]).push(m));
+ Object.values(by).forEach(l=>l.sort((a,b)=>a.eaten_at<b.eaten_at?-1:1));return by}
+const hasNew=(by,id)=>by[id].some(m=>m.eaten_at>sseen(id));
+const storyIds=by=>Object.keys(by).sort((a,b)=>(hasNew(by,b)?1:0)-(hasNew(by,a)?1:0));
+function storyRow(){
+ const by=storiesOf();
+ return`<div class="stories"><button class="stc" data-act="add"><div class="ring2 off"><div><span class="av" style="width:56px;height:56px;font-size:26px;background:var(--soft);color:var(--ink)">+</span></div></div><small>Sen</small></button>${storyIds(by).map(id=>`<button class="stc" data-act="story" data-id="${id}"><div class="ring2 ${hasNew(by,id)?'':'off'}"><div>${avatar(id,56)}</div></div><small>${esc(S.names[id]||'?')}</small></button>`).join('')}</div>`}
+function storyView(){
+ const st=S.story,l=storiesOf()[st.uid]||[],m=l[st.i];if(!m)return'';const u=S.urls[m.photo_path];
+ return`<div class="story" data-act="stap"><div class="sbars">${l.map((_,k)=>`<span class="${k<st.i?'done':k===st.i?'cur':''}"><i></i></span>`).join('')}</div>
+ <div class="shead">${avatar(st.uid,34)}<b>${esc(S.names[st.uid]||'')}</b><small>${ago(m.eaten_at)}</small><button class="x" data-act="stclose" aria-label="Kapat">×</button></div>
+ ${u?`<img src="${u}" alt="">`:`<div class="snop"><b>${esc(m.name)}</b></div>`}
+ <div class="scap"><b>${esc(m.name)}</b><div>${m.kcal} kcal ${dt('cp')}${+m.protein||0} g${dt('cc')}${+m.carbs||0} g${dt('cf')}${+m.fat||0} g</div></div></div>`}
+function stTick(){clearTimeout(S.stTm);if(S.story)S.stTm=setTimeout(()=>stGo(1),5000)}
+function stGo(d){
+ const st=S.story;if(!st)return;const by=storiesOf();st.i=Math.max(0,st.i+d);
+ if(st.i>=(by[st.uid]||[]).length){const nx=st.ids[st.ids.indexOf(st.uid)+1];
+  if(nx&&by[nx])S.story={uid:nx,i:0,ids:st.ids};else{S.story=null;clearTimeout(S.stTm);return render()}}
+ const m=(by[S.story.uid]||[])[S.story.i];if(m)sdone(S.story.uid,m.eaten_at);render();stTick()}
+const qrxRow=m=>`<div class="row" style="padding:0 12px 12px;gap:6px;flex-wrap:wrap">${EM.map(e=>`<button class="btn ghost sm" style="${S.myrx?.[m.id]===e?'background:var(--acc);color:#fff':''}" data-act="qrx" data-id="${m.id}:${e}" aria-label="Tepki ver">${e}</button>`).join('')}</div>`;
+function feedView(){return storyRow()+feedCards()}
+let refreshing=false;
+async function refresh(){
+ if(!S.me||refreshing||document.hidden||S.sheet||S.bc||S.ed||S.story||S.ai||S.detail||S.zoom||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;
+ refreshing=true;try{await flushQueue();await load()}catch{}finally{refreshing=false}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+setInterval(refresh,30000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{});
+boot();
 </script></body></html>
